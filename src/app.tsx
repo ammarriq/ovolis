@@ -1,8 +1,10 @@
 import { createRoot } from "react-dom/client"
 
+import HomePage from "./app/page"
+
+const App = () => {
+    return <HomePage />
+}
+
 const root = createRoot(document.body)
-root.render(
-    <div className="bg-red-500">
-        <h2>Hello from React!</h2>
-    </div>
-)
+root.render(<App />)

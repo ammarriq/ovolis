@@ -1,5 +1,5 @@
 import path from "node:path"
-import { app, BrowserWindow } from "electron"
+import { app, BrowserWindow, ipcMain } from "electron"
 import started from "electron-squirrel-startup"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -12,9 +12,37 @@ const createWindow = () => {
     const mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
+        minWidth: 800,
+        minHeight: 600,
+        // frame: false, // Remove window frame
+        titleBarStyle: "hidden", // Hide title bar
+        alwaysOnTop: true, // Keep window on top
+        maximizable: true,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
         },
+    })
+
+    // Remove menu bar
+    mainWindow.setMenuBarVisibility(false)
+
+    // Handle window controls
+    ipcMain.handle("window-minimize", () => {
+        mainWindow.minimize()
+    })
+
+    ipcMain.handle("window-maximize", () => {
+        if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize()
+        } else {
+            mainWindow.maximize()
+        }
+    })
+
+    ipcMain.handle("window-close", () => {
+        mainWindow.close()
     })
 
     // and load the index.html of the app.
