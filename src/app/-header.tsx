@@ -5,7 +5,7 @@ import { MinimizeIcon } from "~/icons/minimize"
 function Header() {
     return (
         <header
-            className="flex items-center border-b h-10 overflow-hidden"
+            className="flex items-center fixed top-0 bg-background border-b w-full h-10 overflow-hidden"
             style={{ WebkitAppRegion: "drag" }}
         >
             <div className="text-xs font-medium px-3">Recrod</div>

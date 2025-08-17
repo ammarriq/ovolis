@@ -2,6 +2,7 @@ import path from "node:path"
 import { app, BrowserWindow, ipcMain } from "electron"
 import started from "electron-squirrel-startup"
 
+import { resizeWindow } from "./utils/main/resize-window"
 import { takeScreenshot } from "./utils/main/take-screenshots"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -43,6 +44,7 @@ const createWindow = () => {
     })
 
     ipcMain.handle("get-screen-sources", takeScreenshot)
+    ipcMain.handle("resize-window", resizeWindow)
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

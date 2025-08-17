@@ -7,4 +7,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     closeWindow: () => ipcRenderer.invoke("window-close"),
 
     getScreenSources: () => ipcRenderer.invoke("get-screen-sources"),
+    resizeWindow: (options: {
+        appName: string
+        width: number
+        height: number
+    }) => ipcRenderer.invoke("resize-window", options),
 })
