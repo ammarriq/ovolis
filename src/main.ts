@@ -2,6 +2,8 @@ import path from "node:path"
 import { app, BrowserWindow, ipcMain } from "electron"
 import started from "electron-squirrel-startup"
 
+import { takeScreenshot } from "./utils/main/take-screenshots"
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
     app.quit()
@@ -14,9 +16,7 @@ const createWindow = () => {
         height: 600,
         minWidth: 800,
         minHeight: 600,
-        // frame: false, // Remove window frame
         titleBarStyle: "hidden", // Hide title bar
-        alwaysOnTop: true, // Keep window on top
         maximizable: true,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
@@ -29,32 +29,27 @@ const createWindow = () => {
     mainWindow.setMenuBarVisibility(false)
 
     // Handle window controls
+    ipcMain.handle("window-close", () => {
+        mainWindow.close()
+    })
+
     ipcMain.handle("window-minimize", () => {
         mainWindow.minimize()
     })
 
     ipcMain.handle("window-maximize", () => {
-        if (mainWindow.isMaximized()) {
-            mainWindow.unmaximize()
-        } else {
-            mainWindow.maximize()
-        }
+        if (mainWindow.isMaximized()) mainWindow.unmaximize()
+        else mainWindow.maximize()
     })
 
-    ipcMain.handle("window-close", () => {
-        mainWindow.close()
-    })
+    ipcMain.handle("get-screen-sources", takeScreenshot)
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL)
     } else {
-        mainWindow.loadFile(
-            path.join(
-                __dirname,
-                `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
-            )
-        )
+        const filePath = `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
+        mainWindow.loadFile(path.join(__dirname, filePath))
     }
 
     // Open the DevTools.

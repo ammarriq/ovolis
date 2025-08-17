@@ -1,3 +1,5 @@
+import type { ScreenSource } from "~/types/screen-sources"
+
 // Declare electron API types
 declare global {
     interface Window {
@@ -5,6 +7,8 @@ declare global {
             minimizeWindow: () => Promise<void>
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>
+
+            getScreenSources: () => Promise<ScreenSource[]>
         }
     }
 }
