@@ -17,7 +17,7 @@ try {
     const appPath = app.getAppPath()
     const addonPath = path.join(
         appPath,
-        "src/native/build/Release/window_resizer.node"
+        "native/build/Release/window_resizer.node"
     )
     console.log("Attempting to load native addon from:", addonPath)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
