@@ -1,5 +1,10 @@
 {
-    "include": ["**/*.ts", "**/*.tsx", "global.d.ts"],
+    "include": [
+        "**/*.ts",
+        "**/*.tsx",
+        "global.d.ts",
+        "src/utils/main/resize-window.ts"
+    ],
     "compilerOptions": {
         "target": "ESNext",
         "module": "esnext",

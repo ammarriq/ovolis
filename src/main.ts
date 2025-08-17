@@ -2,7 +2,7 @@ import path from "node:path"
 import { app, BrowserWindow, ipcMain } from "electron"
 import started from "electron-squirrel-startup"
 
-import { resizeWindow } from "./utils/main/resize-window"
+import { resizeWindow } from "./utils/main/resize-window.js"
 import { takeScreenshot } from "./utils/main/take-screenshots"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.

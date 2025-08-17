@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{739DB09A-CC57-A953-A6CF-F64FA08E4FA7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:">
+      <UniqueIdentifier>{7B735499-E5DD-1C2B-6C26-70023832A1CF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users">
+      <UniqueIdentifier>{E9F714C1-DA89-54E2-60CF-39FEB20BF756}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP">
+      <UniqueIdentifier>{68BCE466-0550-42D8-F79D-21FBE8C73170}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData">
+      <UniqueIdentifier>{F852EB63-437C-846A-220F-8D9ED6DAEC1D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local">
+      <UniqueIdentifier>{AA1ADE49-EB66-4CF9-B60D-A95495F1ED01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache">
+      <UniqueIdentifier>{1C7D8C2F-A190-CF4F-A238-1F1176C9ADAE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx">
+      <UniqueIdentifier>{82DA865C-1486-A6D3-BD7F-D5CDD81F2B0E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c">
+      <UniqueIdentifier>{B2FB950C-4DAD-DAAD-78C6-D484F151A5C0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00">
+      <UniqueIdentifier>{40638FA7-1DCE-CCA3-B9D8-D5C114E1D37D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules">
+      <UniqueIdentifier>{56DF7A98-063D-FB9D-485C-089023B4C16A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm">
+      <UniqueIdentifier>{293CE058-3CF8-8B4D-C9A0-FD024AF736DB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0">
+      <UniqueIdentifier>{9A799878-1C48-6BC7-559F-181F63DC17AF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0\node_modules">
+      <UniqueIdentifier>{56DF7A98-063D-FB9D-485C-089023B4C16A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0\node_modules\node-gyp">
+      <UniqueIdentifier>{77348C0E-2034-7791-74D5-63C077DF5A3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0\node_modules\node-gyp\src">
+      <UniqueIdentifier>{8CDEE807-BC53-E450-C8B8-4DEBB66742D4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..">
+      <UniqueIdentifier>{739DB09A-CC57-A953-A6CF-F64FA08E4FA7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\window_resizer.cpp">
+      <Filter>..</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0\node_modules\node-gyp\src\win_delay_load_hook.cc">
+      <Filter>C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0\node_modules\node-gyp\src</Filter>
+    </ClCompile>
+    <None Include="..\binding.gyp">
+      <Filter>..</Filter>
+    </None>
+  </ItemGroup>
+</Project>
