@@ -59,7 +59,8 @@ const createWindow = () => {
     )
     ipcMain.handle(
         "save-recording-data",
-        async (_, filePath: string, buffer: Buffer) => {
+        async (_, filePath: string, uint8Array: Uint8Array) => {
+            const buffer = Buffer.from(uint8Array)
             return await saveRecordingData(filePath, buffer)
         }
     )

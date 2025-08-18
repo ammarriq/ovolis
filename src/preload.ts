@@ -14,8 +14,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     }) => ipcRenderer.invoke("resize-window", options),
     focusWindow: (windowTitle: string) =>
         ipcRenderer.invoke("focus-window", windowTitle),
+
     startHighResRecording: (sourceId: string, sourceName: string) =>
         ipcRenderer.invoke("start-high-res-recording", sourceId, sourceName),
-    saveRecordingData: (filePath: string, buffer: Buffer) =>
+    saveRecordingData: (filePath: string, buffer: Uint8Array) =>
         ipcRenderer.invoke("save-recording-data", filePath, buffer),
 })

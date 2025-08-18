@@ -21,7 +21,7 @@ declare global {
             ) => Promise<string>
             saveRecordingData: (
                 filePath: string,
-                buffer: Buffer
+                buffer: Uint8Array
             ) => Promise<string>
         }
     }
