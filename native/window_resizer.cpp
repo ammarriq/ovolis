@@ -27,6 +27,51 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
     return TRUE;
 }
 
+// Helper function to normalize string for matching (remove special chars, convert to lowercase)
+std::string NormalizeForMatching(const std::string& str) {
+    std::string normalized;
+    for (char c : str) {
+        if (std::isalnum(c) || std::isspace(c)) {
+            normalized += std::tolower(c);
+        } else {
+            // Replace special characters (like dots) with spaces
+            normalized += ' ';
+        }
+    }
+    return normalized;
+}
+
+// Helper function to check if all words from search term exist in target string
+bool ContainsAllWords(const std::string& target, const std::string& search) {
+    std::string normalizedTarget = NormalizeForMatching(target);
+    std::string normalizedSearch = NormalizeForMatching(search);
+    
+    // Split search into words
+    std::vector<std::string> searchWords;
+    std::string word;
+    for (char c : normalizedSearch) {
+        if (c == ' ') {
+            if (!word.empty()) {
+                searchWords.push_back(word);
+                word.clear();
+            }
+        } else {
+            word += c;
+        }
+    }
+    if (!word.empty()) {
+        searchWords.push_back(word);
+    }
+    
+    // Check if all words exist in target
+    for (const auto& searchWord : searchWords) {
+        if (searchWord.length() > 0 && normalizedTarget.find(searchWord) == std::string::npos) {
+            return false;
+        }
+    }
+    return true;
+}
+
 HWND FindWindowByTitle(const std::string& windowTitle) {
     // Try exact match first
     HWND hwnd = FindWindowA(nullptr, windowTitle.c_str());
@@ -42,12 +87,21 @@ HWND FindWindowByTitle(const std::string& windowTitle) {
     std::string lowerTitle = windowTitle;
     std::transform(lowerTitle.begin(), lowerTitle.end(), lowerTitle.begin(), ::tolower);
 
+    // First try: exact substring match (original logic)
     for (const auto& window : windows) {
         std::string lowerWindowTitle = window.title;
         std::transform(lowerWindowTitle.begin(), lowerWindowTitle.end(), lowerWindowTitle.begin(), ::tolower);
         
         if (lowerWindowTitle.find(lowerTitle) != std::string::npos || 
             lowerTitle.find(lowerWindowTitle) != std::string::npos) {
+            return window.hwnd;
+        }
+    }
+    
+    // Second try: word-based matching (handles special characters like dots)
+    for (const auto& window : windows) {
+        if (ContainsAllWords(window.title, windowTitle) || 
+            ContainsAllWords(windowTitle, window.title)) {
             return window.hwnd;
         }
     }
@@ -75,6 +129,9 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
     int height = info[2].As<Napi::Number>().Int32Value();
 
     try {
+        // Store the current foreground window to restore focus later
+        HWND currentForegroundWindow = GetForegroundWindow();
+        
         // Find the window by title
         HWND hwnd = FindWindowByTitle(appName);
         
@@ -114,22 +171,22 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
             }
         }
 
-        // Try multiple approaches to resize the window
+        // Try multiple approaches to resize the window without changing focus
         BOOL success = FALSE;
         
-        // Approach 1: Standard SetWindowPos
+        // Approach 1: SetWindowPos without changing focus or z-order
         success = SetWindowPos(
             hwnd,
-            HWND_TOP,
+            nullptr,
             currentX,
             currentY,
             width,
             height,
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
         );
         
         if (!success) {
-            // Approach 2: Try with different flags
+            // Approach 2: Try with different flags but still no activation
             success = SetWindowPos(
                 hwnd,
                 nullptr,
@@ -137,7 +194,7 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
                 currentY,
                 width,
                 height,
-                SWP_NOZORDER | SWP_FRAMECHANGED
+                SWP_NOZORDER | SWP_NOACTIVATE
             );
         }
         
@@ -147,6 +204,12 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
         }
 
         if (success) {
+            // Restore focus to the original window if it's still valid
+            if (currentForegroundWindow && IsWindow(currentForegroundWindow)) {
+                SetForegroundWindow(currentForegroundWindow);
+                std::cout << "Focus restored to original window" << std::endl;
+            }
+            
             // Verify the resize actually happened
             RECT newRect;
             if (GetWindowRect(hwnd, &newRect)) {
@@ -156,17 +219,21 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
                 
                 if (newWidth == width && newHeight == height) {
                     return Napi::String::New(env, "✅ Successfully resized '" + appName + "' to " + 
-                        std::to_string(width) + "x" + std::to_string(height) + " pixels using native Windows API.");
+                        std::to_string(width) + "x" + std::to_string(height) + " pixels using native Windows API (focus preserved).");
                 } else {
                     return Napi::String::New(env, "⚠️ SetWindowPos succeeded but window size didn't change. Current: " + 
                         std::to_string(newWidth) + "x" + std::to_string(newHeight) + ", Expected: " + 
-                        std::to_string(width) + "x" + std::to_string(height));
+                        std::to_string(width) + "x" + std::to_string(height) + " (focus preserved)");
                 }
             } else {
                 return Napi::String::New(env, "✅ SetWindowPos succeeded for '" + appName + "' to " + 
-                    std::to_string(width) + "x" + std::to_string(height) + " pixels (verification failed).");
+                    std::to_string(width) + "x" + std::to_string(height) + " pixels (verification failed, focus preserved).");
             }
         } else {
+            // Restore focus even if resize failed
+            if (currentForegroundWindow && IsWindow(currentForegroundWindow)) {
+                SetForegroundWindow(currentForegroundWindow);
+            }
             DWORD error = GetLastError();
             return Napi::String::New(env, "❌ Failed to resize '" + appName + "'. Error code: " + std::to_string(error));
         }
