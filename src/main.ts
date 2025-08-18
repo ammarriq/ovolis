@@ -2,8 +2,12 @@ import path from "node:path"
 import { app, BrowserWindow, ipcMain } from "electron"
 import started from "electron-squirrel-startup"
 
-import { resizeWindow } from "./utils/main/resize-window.js"
+import {
+    saveRecordingData,
+    startHighResRecording,
+} from "./utils/main/start-recording.js"
 import { takeScreenshot } from "./utils/main/take-screenshots"
+import { focusWindow, resizeWindow } from "./utils/main/window-manager.js"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -45,6 +49,20 @@ const createWindow = () => {
 
     ipcMain.handle("get-screen-sources", takeScreenshot)
     ipcMain.handle("resize-window", resizeWindow)
+    ipcMain.handle("focus-window", focusWindow)
+
+    ipcMain.handle(
+        "start-high-res-recording",
+        async (_, sourceId: string, sourceName: string) => {
+            return await startHighResRecording(sourceId, sourceName)
+        }
+    )
+    ipcMain.handle(
+        "save-recording-data",
+        async (_, filePath: string, buffer: Buffer) => {
+            return await saveRecordingData(filePath, buffer)
+        }
+    )
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

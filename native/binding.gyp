@@ -1,8 +1,8 @@
 {
   "targets": [
     {
-      "target_name": "window_resizer",
-      "sources": ["window_resizer.cpp"],
+      "target_name": "window_manager",
+      "sources": ["window_manager.cpp"],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"
       ],

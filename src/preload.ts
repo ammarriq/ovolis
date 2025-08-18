@@ -12,4 +12,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
         width: number
         height: number
     }) => ipcRenderer.invoke("resize-window", options),
+    bringWindowForward: (windowTitle: string) =>
+        ipcRenderer.invoke("focus-window", windowTitle),
+    startHighResRecording: (sourceId: string, sourceName: string) =>
+        ipcRenderer.invoke("start-high-res-recording", sourceId, sourceName),
+    saveRecordingData: (filePath: string, buffer: Buffer) =>
+        ipcRenderer.invoke("save-recording-data", filePath, buffer),
 })

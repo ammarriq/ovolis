@@ -8,7 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(node-addon-api)", "..\..\n
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nothing", "..\node_modules\node-addon-api\nothing.vcxproj", "{E6FCA188-AA96-BCC1-6435-F986050F4FDC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "window_resizer", "window_resizer.vcxproj", "{84C5A0EC-5034-0EA0-F869-5BA16E07C538}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "window_manager", "window_manager.vcxproj", "{8759FDD3-0A0F-59E1-E52C-72281A0AD4DF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E6FCA188-AA96-BCC1-6435-F986050F4FDC} = {E6FCA188-AA96-BCC1-6435-F986050F4FDC}
 	EndProjectSection
@@ -19,10 +19,10 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{84C5A0EC-5034-0EA0-F869-5BA16E07C538}.Debug|x64.ActiveCfg = Debug|x64
-		{84C5A0EC-5034-0EA0-F869-5BA16E07C538}.Debug|x64.Build.0 = Debug|x64
-		{84C5A0EC-5034-0EA0-F869-5BA16E07C538}.Release|x64.ActiveCfg = Release|x64
-		{84C5A0EC-5034-0EA0-F869-5BA16E07C538}.Release|x64.Build.0 = Release|x64
+		{8759FDD3-0A0F-59E1-E52C-72281A0AD4DF}.Debug|x64.ActiveCfg = Debug|x64
+		{8759FDD3-0A0F-59E1-E52C-72281A0AD4DF}.Debug|x64.Build.0 = Debug|x64
+		{8759FDD3-0A0F-59E1-E52C-72281A0AD4DF}.Release|x64.ActiveCfg = Release|x64
+		{8759FDD3-0A0F-59E1-E52C-72281A0AD4DF}.Release|x64.Build.0 = Release|x64
 		{E6FCA188-AA96-BCC1-6435-F986050F4FDC}.Debug|x64.ActiveCfg = Debug|x64
 		{E6FCA188-AA96-BCC1-6435-F986050F4FDC}.Debug|x64.Build.0 = Debug|x64
 		{E6FCA188-AA96-BCC1-6435-F986050F4FDC}.Release|x64.ActiveCfg = Release|x64
