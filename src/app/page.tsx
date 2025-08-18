@@ -42,12 +42,25 @@ const HomePage = () => {
                             <button
                                 key={source.id}
                                 className="w-80 overflow-hidden gap-4 justify-between border flex flex-col hover:bg-accent p-2 rounded-md"
-                                onClick={() => {
-                                    window.electronAPI.resizeWindow({
-                                        appName: source.name,
-                                        width: 1200,
-                                        height: 800,
-                                    })
+                                onClick={async () => {
+                                    try {
+                                        // Bring the window forward first
+                                        const bringForwardResult =
+                                            await window.electronAPI.focusWindow(
+                                                source.name
+                                            )
+                                        console.log(
+                                            "Bring forward result:",
+                                            bringForwardResult
+                                        )
+
+                                        // Start high-resolution recording
+                                    } catch (error) {
+                                        console.error("Error:", error)
+                                        alert(
+                                            `❌ Failed to start recording: ${error instanceof Error ? error.message : String(error)}`
+                                        )
+                                    }
                                 }}
                             >
                                 <img
@@ -70,103 +83,6 @@ const HomePage = () => {
                         >
                             Record
                         </button>
-
-                        <div className="flex flex-col gap-2 items-center">
-                            <p className="text-sm text-gray-600">
-                                External Window Resize Test
-                            </p>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => {
-                                        if (window.electronAPI) {
-                                            window.electronAPI
-                                                .resizeWindow({
-                                                    appName: "Notepad",
-                                                    width: 1000,
-                                                    height: 700,
-                                                })
-                                                .then((result) => {
-                                                    console.log(
-                                                        "Resize success:",
-                                                        result
-                                                    )
-                                                    alert(result)
-                                                })
-                                                .catch((error) => {
-                                                    console.error(
-                                                        "Resize failed:",
-                                                        error
-                                                    )
-                                                    alert(`Error: ${error}`)
-                                                })
-                                        }
-                                    }}
-                                    className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                                >
-                                    Resize Notepad
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        if (window.electronAPI) {
-                                            window.electronAPI
-                                                .resizeWindow({
-                                                    appName: "Chrome",
-                                                    width: 800,
-                                                    height: 600,
-                                                })
-                                                .then((result) => {
-                                                    console.log(
-                                                        "Resize success:",
-                                                        result
-                                                    )
-                                                    alert(result)
-                                                })
-                                                .catch((error) => {
-                                                    console.error(
-                                                        "Resize failed:",
-                                                        error
-                                                    )
-                                                    alert(`Error: ${error}`)
-                                                })
-                                        }
-                                    }}
-                                    className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                                >
-                                    Resize Chrome
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        if (window.electronAPI) {
-                                            window.electronAPI
-                                                .resizeWindow({
-                                                    appName: "Calculator",
-                                                    width: 400,
-                                                    height: 500,
-                                                })
-                                                .then((result) => {
-                                                    console.log(
-                                                        "Resize success:",
-                                                        result
-                                                    )
-                                                    alert(result)
-                                                })
-                                                .catch((error) => {
-                                                    console.error(
-                                                        "Resize failed:",
-                                                        error
-                                                    )
-                                                    alert(`Error: ${error}`)
-                                                })
-                                        }
-                                    }}
-                                    className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
-                                >
-                                    Resize Calculator
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 )}
             </div>

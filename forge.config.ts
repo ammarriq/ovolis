@@ -11,9 +11,7 @@ import { VitePlugin } from "@electron-forge/plugin-vite"
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
-        extraResource: [
-            "native/build/Release/window_resizer.node"
-        ],
+        extraResource: ["native/build/Release/window_manager.node"],
     },
     rebuildConfig: {},
     makers: [

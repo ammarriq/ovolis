@@ -14,9 +14,15 @@ declare global {
                 width: number
                 height: number
             }) => Promise<void>
-            bringWindowForward: (windowTitle: string) => Promise<string>
-            startHighResRecording: (sourceId: string, sourceName: string) => Promise<string>
-            saveRecordingData: (filePath: string, buffer: Buffer) => Promise<string>
+            focusWindow: (windowTitle: string) => Promise<string>
+            startHighResRecording: (
+                sourceId: string,
+                sourceName: string
+            ) => Promise<string>
+            saveRecordingData: (
+                filePath: string,
+                buffer: Buffer
+            ) => Promise<string>
         }
     }
 }
