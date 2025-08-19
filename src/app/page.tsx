@@ -1,12 +1,20 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 import Header from "./-header"
+import FloatingBar from "~/components/floating-bar"
 
 const HomePage = () => {
     const [modal, setModal] = useState(false)
     const [screenSources, setScreenSources] = useState<ScreenSource[]>([])
+    const [isRecording, setIsRecording] = useState(false)
+    const [recordingTime, setRecordingTime] = useState(0)
+    const [showMainWindow, setShowMainWindow] = useState(true)
+    
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const streamRef = useRef<MediaStream | null>(null)
+    const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         // Check if electronAPI is available (not available in web preview)
@@ -41,6 +49,27 @@ const HomePage = () => {
             )
         }
     }, [])
+
+    // Recording timer effect
+    useEffect(() => {
+        if (isRecording) {
+            recordingTimerRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1)
+            }, 1000)
+        } else {
+            if (recordingTimerRef.current) {
+                clearInterval(recordingTimerRef.current)
+                recordingTimerRef.current = null
+            }
+            setRecordingTime(0)
+        }
+
+        return () => {
+            if (recordingTimerRef.current) {
+                clearInterval(recordingTimerRef.current)
+            }
+        }
+    }, [isRecording])
 
     const getScreenSources = async () => {
         setModal(true)
@@ -96,20 +125,17 @@ const HomePage = () => {
             const stream = await navigator.mediaDevices.getUserMedia(
                 recordingConfig.constraints
             )
+            streamRef.current = stream
 
             // Try different codecs for best quality, fallback if not supported
             const mimeType = "video/mp4; codecs=avc1.640028, mp4a.40.2"
-            // if (MediaRecorder.isTypeSupported("video/webm;codecs=h264")) {
-            //     mimeType = "video/webm;codecs=h264"
-            // } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
-            //     mimeType = "video/webm;codecs=vp8"
-            // }
 
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType,
                 videoBitsPerSecond: 4000000, // 4 Mbps - more conservative for stability
                 audioBitsPerSecond: 128000, // 128 kbps for audio
             })
+            mediaRecorderRef.current = mediaRecorder
 
             const chunks: Blob[] = []
             mediaRecorder.ondataavailable = (event) => {
@@ -135,20 +161,22 @@ const HomePage = () => {
                     console.error("Save error:", saveError)
                     alert(`❌ Failed to save recording: ${saveError}`)
                 }
+                
+                // Reset recording state
+                setIsRecording(false)
+                setShowMainWindow(true)
+                setModal(false)
             }
 
             // Start recording with high quality data collection
             mediaRecorder.start(500) // Collect data every 500ms for stability
+            
+            // Set recording state and hide main window
+            setIsRecording(true)
+            setShowMainWindow(false)
+            setModal(false)
 
-            // Stop recording after 10 seconds (for demo)
-            setTimeout(() => {
-                mediaRecorder.stop()
-                stream.getTracks().forEach((track) => track.stop())
-            }, 10000)
-
-            alert(
-                `✅ Window brought forward and recording started for: ${source.name}. Recording will stop in 10 seconds.`
-            )
+            console.log(`✅ Recording started for: ${source.name}`)
         } catch (error) {
             console.error("Error:", error)
             alert(
@@ -157,43 +185,67 @@ const HomePage = () => {
         }
     }
 
-    return (
-        <div className="w-full h-screen bg-background shadow-lg flex flex-col border">
-            <Header />
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop()
+        }
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop())
+            streamRef.current = null
+        }
+        
+        // Reset state will be handled in mediaRecorder.onstop
+    }
 
-            <div className="p-4 mt-10 overflow-y-auto">
-                {modal ? (
-                    <div className="flex gap-4 justify-center flex-wrap">
-                        {screenSources.map((source) => (
-                            <button
-                                key={source.id}
-                                className="w-80 overflow-hidden gap-4 justify-between border flex flex-col hover:bg-accent p-2 rounded-md"
-                                onClick={() => record(source)}
-                            >
-                                <img
-                                    src={source.thumbnail}
-                                    className="rounded-sm"
-                                    alt={source.name}
-                                />
-                                <p className="truncate text-sm">
-                                    {source.name}
-                                </p>
-                            </button>
-                        ))}
-                        <button onClick={() => setModal(false)}>Close</button>
+    return (
+        <>
+            {/* Main Window - only show when not recording */}
+            {showMainWindow && (
+                <div className="w-full h-screen bg-background shadow-lg flex flex-col border">
+                    <Header />
+
+                    <div className="p-4 mt-10 overflow-y-auto">
+                        {modal ? (
+                            <div className="flex gap-4 justify-center flex-wrap">
+                                {screenSources.map((source) => (
+                                    <button
+                                        key={source.id}
+                                        className="w-80 overflow-hidden gap-4 justify-between border flex flex-col hover:bg-accent p-2 rounded-md"
+                                        onClick={() => record(source)}
+                                    >
+                                        <img
+                                            src={source.thumbnail}
+                                            className="rounded-sm"
+                                            alt={source.name}
+                                        />
+                                        <p className="truncate text-sm">
+                                            {source.name}
+                                        </p>
+                                    </button>
+                                ))}
+                                <button onClick={() => setModal(false)}>Close</button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center p-4 grow justify-center overflow-y-auto gap-4">
+                                <button
+                                    onClick={() => getScreenSources()}
+                                    className="cursor-pointer size-24 rounded-full bg-primary grid place-items-center text-foreground-primary font-bold"
+                                >
+                                    Record
+                                </button>
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center p-4 grow justify-center overflow-y-auto gap-4">
-                        <button
-                            onClick={() => getScreenSources()}
-                            className="cursor-pointer size-24 rounded-full bg-primary grid place-items-center text-foreground-primary font-bold"
-                        >
-                            Record
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
+                </div>
+            )}
+            
+            {/* Floating Bar - only show when recording */}
+            <FloatingBar 
+                onStop={stopRecording}
+                isRecording={isRecording}
+                recordingTime={recordingTime}
+            />
+        </>
     )
 }
 
