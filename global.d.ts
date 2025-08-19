@@ -23,6 +23,7 @@ declare global {
                 filePath: string,
                 buffer: Uint8Array
             ) => Promise<string>
+            openFolder: (filePath: string) => Promise<void>
         }
     }
 }

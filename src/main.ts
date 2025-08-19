@@ -1,5 +1,5 @@
 import path from "node:path"
-import { app, BrowserWindow, ipcMain } from "electron"
+import { app, BrowserWindow, ipcMain, shell } from "electron"
 import started from "electron-squirrel-startup"
 
 import {
@@ -14,9 +14,13 @@ if (started) {
     app.quit()
 }
 
+// Global window references
+let mainWindow: BrowserWindow | null = null
+let floatingWindow: BrowserWindow | null = null
+
 const createWindow = () => {
     // Create the browser window.
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         minWidth: 800,
@@ -35,21 +39,47 @@ const createWindow = () => {
 
     // Handle window controls
     ipcMain.handle("window-close", () => {
-        mainWindow.close()
+        if (mainWindow) mainWindow.close()
     })
 
     ipcMain.handle("window-minimize", () => {
-        mainWindow.minimize()
+        if (mainWindow) mainWindow.minimize()
     })
 
     ipcMain.handle("window-maximize", () => {
-        if (mainWindow.isMaximized()) mainWindow.unmaximize()
-        else mainWindow.maximize()
+        if (mainWindow) {
+            if (mainWindow.isMaximized()) mainWindow.unmaximize()
+            else mainWindow.maximize()
+        }
     })
 
     ipcMain.handle("get-screen-sources", takeScreenshot)
     ipcMain.handle("resize-window", resizeWindow)
     ipcMain.handle("focus-window", focusWindow)
+
+    // Recording window functionality removed - now using floating bar in main window
+
+    // Floating window handlers
+    ipcMain.handle("create-floating-window", (_, source) => {
+        return createFloatingWindow(source)
+    })
+
+    ipcMain.handle("close-floating-window", () => {
+        if (floatingWindow) {
+            floatingWindow.close()
+            floatingWindow = null
+        }
+    })
+
+    ipcMain.handle("get-floating-window-data", () => {
+        // This can be used to get initial data for the floating window
+        return { source: null }
+    })
+
+    ipcMain.handle("open-folder", async (_, filePath: string) => {
+        const folderPath = path.dirname(filePath)
+        await shell.openPath(folderPath)
+    })
 
     ipcMain.handle(
         "start-high-res-recording",
@@ -57,6 +87,7 @@ const createWindow = () => {
             return await startHighResRecording(sourceId, sourceName)
         }
     )
+
     ipcMain.handle(
         "save-recording-data",
         async (_, filePath: string, uint8Array: Uint8Array) => {
@@ -75,6 +106,52 @@ const createWindow = () => {
 
     // Open the DevTools.
     mainWindow.webContents.openDevTools()
+}
+
+const createFloatingWindow = (source: any) => {
+    if (floatingWindow) {
+        floatingWindow.close()
+    }
+
+    floatingWindow = new BrowserWindow({
+        width: 400,
+        height: 80,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        resizable: false,
+        skipTaskbar: true,
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+        },
+    })
+
+    // Remove menu bar
+    floatingWindow.setMenuBarVisibility(false)
+
+    // Load the floating window HTML
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        floatingWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/floating-window.html`)
+    } else {
+        floatingWindow.loadFile(path.join(__dirname, "../floating-window.html"))
+    }
+
+    // Send source data to floating window when ready
+    floatingWindow.webContents.once('did-finish-load', () => {
+        floatingWindow?.webContents.executeJavaScript(`
+            window.dispatchEvent(new CustomEvent('source-selected', { 
+                detail: { source: ${JSON.stringify(source)} } 
+            }))
+        `)
+    })
+
+    floatingWindow.on('closed', () => {
+        floatingWindow = null
+    })
+
+    return floatingWindow
 }
 
 // This method will be called when Electron has finished

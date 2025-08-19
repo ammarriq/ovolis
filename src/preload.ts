@@ -19,4 +19,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.invoke("start-high-res-recording", sourceId, sourceName),
     saveRecordingData: (filePath: string, buffer: Uint8Array) =>
         ipcRenderer.invoke("save-recording-data", filePath, buffer),
+    openFolder: (filePath: string) => ipcRenderer.invoke("open-folder", filePath),
+
+    // Floating window APIs
+    createFloatingWindow: (source: any) =>
+        ipcRenderer.invoke("create-floating-window", source),
+    closeFloatingWindow: () => ipcRenderer.invoke("close-floating-window"),
+    getFloatingWindowData: () => ipcRenderer.invoke("get-floating-window-data"),
 })

@@ -49,12 +49,12 @@ export async function startHighResRecording(
                     mandatory: {
                         chromeMediaSource: "desktop",
                         chromeMediaSourceId: targetSource.id,
-                        minWidth: 1920,
-                        maxWidth: 2560, // More conservative resolution
-                        minHeight: 1080,
-                        maxHeight: 1440, // More conservative resolution
-                        minFrameRate: 30,
-                        maxFrameRate: 60, // More conservative frame rate
+                        minWidth: 1280,
+                        maxWidth: 1920, // Further reduced to prevent WGC errors
+                        minHeight: 720,
+                        maxHeight: 1080, // Further reduced to prevent WGC errors
+                        minFrameRate: 24,
+                        maxFrameRate: 30, // Reduced frame rate for stability
                     },
                 },
             },
