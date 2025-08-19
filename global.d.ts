@@ -15,15 +15,18 @@ declare global {
                 height: number
             }) => Promise<void>
             focusWindow: (windowTitle: string) => Promise<string>
-            startHighResRecording: (
-                sourceId: string,
-                sourceName: string
-            ) => Promise<string>
-            saveRecordingData: (
+            startRecording: (source: {
+                id: string
+                name: string
+            }) => Promise<string>
+            saveRecording: (
                 filePath: string,
                 buffer: Uint8Array
             ) => Promise<string>
             openFolder: (filePath: string) => Promise<void>
+
+            createFloatingBar: (source: ScreenSource) => Promise<void>
+            closeFloatingBar: () => Promise<void>
         }
     }
 }

@@ -3,7 +3,7 @@
         "**/*.ts",
         "**/*.tsx",
         "global.d.ts",
-        "src/utils/main/window-manager.ts"
+        "src/utils/window-manager.ts"
     ],
     "compilerOptions": {
         "target": "ESNext",

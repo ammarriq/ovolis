@@ -1,12 +1,11 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useState } from "react"
-
-// FloatingBar is now handled in separate window
+import { createRoot } from "react-dom/client"
 
 import Header from "./-header"
 
-const HomePage = () => {
+const Recorder = () => {
     const [modal, setModal] = useState(false)
     const [screenSources, setScreenSources] = useState<ScreenSource[]>([])
     const [selectedSource, setSelectedSource] = useState<ScreenSource>(null)
@@ -54,15 +53,12 @@ const HomePage = () => {
     const selectSource = async (source: ScreenSource) => {
         setSelectedSource(source)
         setModal(false)
-        
-        // Create floating window with selected source
-        if (window.electronAPI?.createFloatingWindow) {
-            try {
-                await window.electronAPI.createFloatingWindow(source)
-            } catch (error) {
-                console.error("Failed to create floating window:", error)
-                alert("Failed to create floating window")
-            }
+
+        try {
+            await window.electronAPI.createFloatingBar({ ...source })
+        } catch (error) {
+            console.error("Failed to create floating window:", error)
+            alert("Failed to create floating window")
         }
     }
 
@@ -106,7 +102,8 @@ const HomePage = () => {
                             {selectedSource && (
                                 <div className="text-center mt-4">
                                     <p className="text-sm text-gray-600">
-                                        Recording controls opened in floating window
+                                        Recording controls opened in floating
+                                        window
                                     </p>
                                     <p className="text-xs text-gray-500">
                                         Selected: {selectedSource.name}
@@ -121,4 +118,5 @@ const HomePage = () => {
     )
 }
 
-export default HomePage
+const root = createRoot(document.body)
+root.render(<Recorder />)

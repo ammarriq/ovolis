@@ -4,7 +4,7 @@ import { app } from "electron"
 import { writeFile } from "fs/promises"
 import path from "path"
 
-export async function startHighResRecording(
+export async function startRecording(
     sourceId: string,
     sourceName: string
 ): Promise<string> {
@@ -69,7 +69,7 @@ export async function startHighResRecording(
     }
 }
 
-export async function saveRecordingData(
+export async function saveRecording(
     filePath: string,
     buffer: Buffer
 ): Promise<string> {

@@ -1,3 +1,5 @@
+import type { ScreenSource } from "./types/screen-sources"
+
 import { contextBridge, ipcRenderer } from "electron"
 
 // Expose window controls to renderer process
@@ -6,24 +8,30 @@ contextBridge.exposeInMainWorld("electronAPI", {
     maximizeWindow: () => ipcRenderer.invoke("window-maximize"),
     closeWindow: () => ipcRenderer.invoke("window-close"),
 
-    getScreenSources: () => ipcRenderer.invoke("get-screen-sources"),
-    resizeWindow: (options: {
-        appName: string
-        width: number
-        height: number
-    }) => ipcRenderer.invoke("resize-window", options),
-    focusWindow: (windowTitle: string) =>
-        ipcRenderer.invoke("focus-window", windowTitle),
+    getScreenSources: () => {
+        return ipcRenderer.invoke("get-screen-sources")
+    },
+    resizeWindow: (options) => {
+        return ipcRenderer.invoke("resize-window", options)
+    },
+    focusWindow: (windowTitle: string) => {
+        return ipcRenderer.invoke("focus-window", windowTitle)
+    },
 
-    startHighResRecording: (sourceId: string, sourceName: string) =>
-        ipcRenderer.invoke("start-high-res-recording", sourceId, sourceName),
-    saveRecordingData: (filePath: string, buffer: Uint8Array) =>
-        ipcRenderer.invoke("save-recording-data", filePath, buffer),
-    openFolder: (filePath: string) => ipcRenderer.invoke("open-folder", filePath),
+    startRecording: (source) => {
+        return ipcRenderer.invoke("start-recording", source)
+    },
+    saveRecording: (filePath: string, buffer: Uint8Array) => {
+        return ipcRenderer.invoke("save-recording", filePath, buffer)
+    },
+    openFolder: (filePath: string) => {
+        return ipcRenderer.invoke("open-folder", filePath)
+    },
 
-    // Floating window APIs
-    createFloatingWindow: (source: any) =>
-        ipcRenderer.invoke("create-floating-window", source),
-    closeFloatingWindow: () => ipcRenderer.invoke("close-floating-window"),
-    getFloatingWindowData: () => ipcRenderer.invoke("get-floating-window-data"),
-})
+    createFloatingBar: (source: ScreenSource) => {
+        return ipcRenderer.invoke("create-floating-bar", source)
+    },
+    closeFloatingBar: () => {
+        return ipcRenderer.invoke("close-floating-bar")
+    },
+} satisfies Window["electronAPI"])

@@ -50,11 +50,10 @@ const FloatingBar = ({
 
         try {
             // Get recording configuration
-            const recordingConfigStr =
-                await window.electronAPI.startHighResRecording(
-                    source.id,
-                    source.name
-                )
+            const recordingConfigStr = await window.electronAPI.startRecording({
+                id: source.id,
+                name: source.name,
+            })
             const recordingConfig = JSON.parse(recordingConfigStr)
             console.log("Recording config:", recordingConfig)
 
@@ -70,38 +69,6 @@ const FloatingBar = ({
                     "Primary capture method failed, trying fallback:",
                     primaryError
                 )
-
-                // Fallback to more basic constraints
-                const fallbackConstraints = {
-                    audio: {
-                        mandatory: {
-                            chromeMediaSource: "desktop",
-                            chromeMediaSourceId: source.id,
-                        },
-                    },
-                    video: {
-                        mandatory: {
-                            chromeMediaSource: "desktop",
-                            chromeMediaSourceId: source.id,
-                            maxWidth: 1280,
-                            maxHeight: 720,
-                            maxFrameRate: 20,
-                        },
-                    },
-                }
-
-                try {
-                    stream =
-                        await navigator.mediaDevices.getUserMedia(
-                            fallbackConstraints
-                        )
-                    console.log("✅ Fallback capture method successful")
-                } catch (fallbackError) {
-                    console.error("Both capture methods failed:", fallbackError)
-                    throw new Error(
-                        `Screen capture failed: ${fallbackError.message}`
-                    )
-                }
             }
             streamRef.current = stream
 
@@ -155,11 +122,10 @@ const FloatingBar = ({
                 const uint8Array = new Uint8Array(arrayBuffer)
 
                 try {
-                    const saveResult =
-                        await window.electronAPI.saveRecordingData(
-                            recordingConfig.filePath,
-                            uint8Array
-                        )
+                    const saveResult = await window.electronAPI.saveRecording(
+                        recordingConfig.filePath,
+                        uint8Array
+                    )
                     console.log("Save result:", saveResult)
                     alert(`✅ Recording saved: ${saveResult}`)
 
@@ -221,7 +187,12 @@ const FloatingBar = ({
     return (
         <div className="z-50 bg-black/80 backdrop-blur-sm rounded-full px-6 py-3 flex items-center gap-4 shadow-lg border border-white/20">
             {/* Source name */}
-            <div className="text-white text-sm font-medium">{source.name}</div>
+            <div
+                className="text-white text-sm font-medium"
+                style={{ WebkitAppRegion: "drag" }}
+            >
+                {source.name}
+            </div>
 
             {/* Recording indicator and timer */}
             {isRecording && (

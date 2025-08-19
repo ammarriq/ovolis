@@ -26,7 +26,7 @@
  * ```
  */
 
-import "./app"
+import "./app/recorder"
 import "./index.css"
 
 console.log(

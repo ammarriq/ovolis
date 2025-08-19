@@ -1,8 +1,11 @@
-import { createRoot } from "react-dom/client"
-import { useEffect, useState } from "react"
-import type { ScreenSource } from "~/types/screen-sources"
-import FloatingBar from "~/components/floating-bar"
 import "~/index.css"
+
+import type { ScreenSource } from "~/types/screen-sources"
+
+import { useEffect, useState } from "react"
+import { createRoot } from "react-dom/client"
+
+import FloatingBar from "~/components/floating-bar"
 
 const FloatingWindow = () => {
     const [source, setSource] = useState<ScreenSource | null>(null)
@@ -10,7 +13,9 @@ const FloatingWindow = () => {
 
     useEffect(() => {
         // Listen for source selection from main process
-        const handleSourceSelected = (event: any) => {
+        const handleSourceSelected = (
+            event: CustomEvent<{ source: ScreenSource }>
+        ) => {
             const data = event.detail
             if (data?.source) {
                 setSource(data.source)
@@ -19,28 +24,18 @@ const FloatingWindow = () => {
         }
 
         // Add custom event listener for source selection
-        window.addEventListener('source-selected', handleSourceSelected)
-
-        // Request initial data from main process
-        if (window.electronAPI?.getFloatingWindowData) {
-            window.electronAPI.getFloatingWindowData().then((data: any) => {
-                if (data?.source) {
-                    setSource(data.source)
-                    setIsVisible(true)
-                }
-            })
-        }
+        window.addEventListener("source-selected", handleSourceSelected)
 
         return () => {
-            window.removeEventListener('source-selected', handleSourceSelected)
+            window.removeEventListener("source-selected", handleSourceSelected)
         }
     }, [])
 
     const handleClose = () => {
         setIsVisible(false)
         setSource(null)
-        if (window.electronAPI?.closeFloatingWindow) {
-            window.electronAPI.closeFloatingWindow()
+        if (window.electronAPI?.closeFloatingBar) {
+            window.electronAPI.closeFloatingBar()
         }
     }
 
@@ -54,7 +49,9 @@ const FloatingWindow = () => {
     if (!source || !isVisible) {
         return (
             <div className="w-full h-full flex items-center justify-center bg-transparent">
-                <div className="text-white text-sm">Waiting for source selection...</div>
+                <div className="text-white text-sm">
+                    Waiting for source selection...
+                </div>
             </div>
         )
     }
@@ -71,5 +68,5 @@ const FloatingWindow = () => {
     )
 }
 
-const root = createRoot(document.getElementById('root')!)
+const root = createRoot(document.getElementById("root")!)
 root.render(<FloatingWindow />)
