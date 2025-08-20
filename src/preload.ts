@@ -1,3 +1,4 @@
+import type { ConversionProgress } from "./types/ffmpeg"
 import type { ScreenSource } from "./types/screen-sources"
 
 import { contextBridge, ipcRenderer } from "electron"
@@ -33,5 +34,29 @@ contextBridge.exposeInMainWorld("electronAPI", {
     },
     closeFloatingBar: () => {
         return ipcRenderer.invoke("close-floating-bar")
+    },
+
+    // FFmpeg operations
+    ffmpegCheckAvailability: () => {
+        return ipcRenderer.invoke("ffmpeg-check-availability")
+    },
+    ffmpegGetPresets: () => {
+        return ipcRenderer.invoke("ffmpeg-get-presets")
+    },
+    ffmpegConvertVideo: (config: {
+        inputPath: string
+        outputPath: string
+        presetName: string
+    }) => {
+        return ipcRenderer.invoke("ffmpeg-convert-video", config)
+    },
+    ffmpegCancelConversion: () => {
+        return ipcRenderer.invoke("ffmpeg-cancel-conversion")
+    },
+    onFFmpegProgress: (callback: (progress: ConversionProgress) => void) => {
+        ipcRenderer.on("ffmpeg-progress", (_, progress) => callback(progress))
+    },
+    removeFFmpegProgressListener: () => {
+        ipcRenderer.removeAllListeners("ffmpeg-progress")
     },
 } satisfies Window["electronAPI"])

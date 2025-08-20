@@ -1,8 +1,9 @@
-import { desktopCapturer } from "electron"
-import { app } from "electron"
+import { app, desktopCapturer } from "electron"
 
 import { writeFile } from "fs/promises"
 import path from "path"
+
+import { fileProcessor } from "./file-processor.js"
 
 export async function startRecording(
     sourceId: string,
@@ -54,11 +55,23 @@ export async function startRecording(
                         minHeight: 720,
                         maxHeight: 1080, // Further reduced to prevent WGC errors
                         minFrameRate: 24,
-                        maxFrameRate: 30, // Reduced frame rate for stability
+                        maxFrameRate: 25, // IMPROVED: Reduced from 30 to avoid refresh rate conflicts
                     },
                 },
             },
         }
+
+        console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
+        console.log("Recording constraints:", recordingConfig.constraints)
+        console.log("✅ IMPROVED: 25fps to reduce refresh rate conflicts!")
+        console.log(
+            "WARNING: High resolution (1920x1080) may cause WGC issues!"
+        )
+        console.log("Source info:", {
+            id: targetSource.id,
+            name: targetSource.name,
+            displayId: targetSource.display_id,
+        })
 
         return JSON.stringify(recordingConfig)
     } catch (error) {
@@ -80,7 +93,70 @@ export async function saveRecording(
             fs.promises.mkdir(dir, { recursive: true })
         )
 
-        // Save the recording file
+        // Create temporary WebM file path
+        const tempWebmPath = filePath.replace(".mp4", "_temp.webm")
+
+        // Save the WebM recording file first
+        await writeFile(tempWebmPath, buffer)
+        console.log(`WebM file saved temporarily to: ${tempWebmPath}`)
+
+        // Process the recording with FFmpeg conversion
+        const processingResult = await fileProcessor.processRecording({
+            inputPath: tempWebmPath,
+            outputPath: filePath,
+            presetName: "high", // Use high quality preset
+            keepOriginal: false, // Delete the temporary WebM file after conversion
+            onProgress: (progress) => {
+                console.log("Conversion progress:", progress)
+            },
+            onComplete: (outputPath) => {
+                console.log("Conversion completed:", outputPath)
+            },
+            onError: (error) => {
+                console.error("Conversion error:", error)
+            },
+        })
+
+        if (processingResult.success) {
+            const message = processingResult.fallbackUsed
+                ? `Recording saved (WebM format) to: ${processingResult.outputPath}`
+                : `Recording converted and saved to: ${processingResult.outputPath}`
+
+            console.log(message)
+            return message
+        } else {
+            throw new Error(
+                processingResult.error || "Failed to process recording"
+            )
+        }
+    } catch (error) {
+        console.error("Error saving recording:", error)
+
+        // Clean up any temporary files
+        try {
+            await fileProcessor.cleanup()
+        } catch (cleanupError) {
+            console.error("Error during cleanup:", cleanupError)
+        }
+
+        throw new Error(
+            `Failed to save recording: ${error instanceof Error ? error.message : String(error)}`
+        )
+    }
+}
+
+export async function saveRecordingWithoutConversion(
+    filePath: string,
+    buffer: Buffer
+): Promise<string> {
+    try {
+        // Ensure the directory exists
+        const dir = path.dirname(filePath)
+        await import("fs").then((fs) =>
+            fs.promises.mkdir(dir, { recursive: true })
+        )
+
+        // Save the recording file directly (fallback method)
         await writeFile(filePath, buffer)
 
         return `Recording saved successfully to: ${filePath}`
