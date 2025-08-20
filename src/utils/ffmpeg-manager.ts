@@ -63,9 +63,15 @@ export class FFmpegManager {
                 throw new Error("FFmpeg binary not found")
             }
 
-            // Build FFmpeg arguments
+            // ROBUST: Pre-process and validate input file
+            console.log("=== INPUT VALIDATION & REPAIR ===")
+            const validatedInput = await this.validateAndRepairInput(
+                config.inputPath
+            )
+
+            // Build FFmpeg arguments with validated input
             const args = buildFFmpegArgs(
-                config.inputPath,
+                validatedInput,
                 config.outputPath,
                 config.preset
             )
@@ -79,11 +85,9 @@ export class FFmpegManager {
                 preset_speed: config.preset.preset,
                 args: args.join(" "),
             })
-            console.log("✅ Hardware acceleration enabled!")
-            console.log("✅ Duration metadata fixes applied!")
-            console.log(
-                "Duration fix flags: -vsync cfr, -r 25, +genpts, +igndts"
-            )
+            console.log("✅ Robust conversion mode enabled!")
+            console.log("✅ Input validation and repair completed!")
+            console.log("Robust flags: +faststart, +frag_keyframe, +empty_moov")
 
             const startTime = Date.now()
 
@@ -445,6 +449,110 @@ export class FFmpegManager {
         } catch (error) {
             console.error("Duration fix error:", error)
             throw error
+        }
+    }
+
+    private async validateAndRepairInput(inputPath: string): Promise<string> {
+        try {
+            console.log("Validating input file:", inputPath)
+
+            // Check if input file exists and is readable
+            try {
+                await fs.access(inputPath)
+                const stats = await fs.stat(inputPath)
+                console.log(
+                    `Input file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`
+                )
+
+                if (stats.size === 0) {
+                    throw new Error("Input file is empty")
+                }
+            } catch (error) {
+                throw new Error(`Input file validation failed: ${error}`)
+            }
+
+            // Create a repaired version of the input
+            const repairedPath = inputPath.replace(".webm", "_repaired.webm")
+
+            console.log("Repairing input file structure...")
+
+            // Repair WebM file structure and ensure proper metadata
+            const repairArgs = [
+                "-i",
+                inputPath,
+                "-c",
+                "copy", // Copy streams without re-encoding
+                "-avoid_negative_ts",
+                "make_zero",
+                "-fflags",
+                "+genpts",
+                "-map_metadata",
+                "-1", // Remove problematic metadata
+                "-f",
+                "webm", // Force WebM format
+                "-y", // Overwrite
+                repairedPath,
+            ]
+
+            const repairProcess = spawn(this.ffmpegPath, repairArgs, {
+                stdio: ["pipe", "pipe", "pipe"],
+            })
+
+            return new Promise((resolve, _reject) => {
+                let errorOutput = ""
+
+                repairProcess.stderr?.on("data", (data: Buffer) => {
+                    errorOutput += data.toString()
+                })
+
+                repairProcess.on("close", async (code) => {
+                    if (code === 0) {
+                        try {
+                            // Verify the repaired file
+                            const repairedStats = await fs.stat(repairedPath)
+                            if (repairedStats.size > 0) {
+                                console.log(
+                                    "✅ Input file repaired successfully"
+                                )
+                                resolve(repairedPath)
+                            } else {
+                                console.warn(
+                                    "Repaired file is empty, using original"
+                                )
+                                await fs.unlink(repairedPath).catch(() => {})
+                                resolve(inputPath)
+                            }
+                        } catch (error) {
+                            console.warn(
+                                "Failed to verify repaired file, using original:",
+                                error
+                            )
+                            resolve(inputPath)
+                        }
+                    } else {
+                        console.warn(
+                            "Input repair failed, using original file:",
+                            errorOutput
+                        )
+                        // Clean up failed repair file
+                        try {
+                            await fs.unlink(repairedPath)
+                        } catch {}
+                        resolve(inputPath)
+                    }
+                })
+
+                repairProcess.on("error", (error) => {
+                    console.warn(
+                        "Input repair process error, using original:",
+                        error
+                    )
+                    resolve(inputPath)
+                })
+            })
+        } catch (error) {
+            console.warn("Input validation error, using original file:", error)
+            return inputPath
         }
     }
 }

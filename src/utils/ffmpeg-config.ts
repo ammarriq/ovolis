@@ -6,24 +6,22 @@ export const QUALITY_PRESETS: Record<string, QualityPreset> = {
         videoCodec: "libx264",
         audioCodec: "aac",
         audioBitrate: "192k",
-        crf: 20, // IMPROVED: Reduced from 18 for faster processing
-        preset: "fast", // IMPROVED: Changed from "medium" for speed
+        crf: 23, // ROBUST: Balanced quality for compatibility
+        preset: "medium", // ROBUST: Better compatibility than fast
         pixelFormat: "yuv420p",
         additionalFlags: [
-            "-hwaccel",
-            "auto", // ADDED: Hardware acceleration
+            "-f",
+            "mp4", // FORCE: Explicit MP4 format
             "-movflags",
-            "+faststart+write_colr",
-            "-tune",
-            "zerolatency", // ADDED: For faster encoding
-            "-avoid_negative_ts",
-            "make_zero", // FIX: Ensure proper timestamps
-            "-fflags",
-            "+genpts+igndts", // FIX: Generate PTS and ignore DTS issues
-            "-vsync",
-            "cfr", // FIX: Constant frame rate for proper duration
-            "-r",
-            "25", // FIX: Explicit frame rate for duration calculation
+            "+faststart+frag_keyframe+empty_moov",
+            "-strict",
+            "experimental", // COMPATIBILITY: Handle edge cases
+            "-max_muxing_queue_size",
+            "1024", // BUFFER: Prevent sync issues
+            "-analyzeduration",
+            "2147483647", // ANALYZE: Full input analysis
+            "-probesize",
+            "2147483647", // PROBE: Complete stream detection
         ],
     },
     medium: {
@@ -31,24 +29,22 @@ export const QUALITY_PRESETS: Record<string, QualityPreset> = {
         videoCodec: "libx264",
         audioCodec: "aac",
         audioBitrate: "128k",
-        crf: 24, // IMPROVED: Slightly increased for faster processing
-        preset: "fast", // IMPROVED: Changed from "medium" for speed
+        crf: 26, // ROBUST: Balanced quality for compatibility
+        preset: "medium", // ROBUST: Better compatibility than fast
         pixelFormat: "yuv420p",
         additionalFlags: [
-            "-hwaccel",
-            "auto", // ADDED: Hardware acceleration
+            "-f",
+            "mp4", // FORCE: Explicit MP4 format
             "-movflags",
-            "+faststart+write_colr",
-            "-tune",
-            "zerolatency", // ADDED: For faster encoding
-            "-avoid_negative_ts",
-            "make_zero", // FIX: Ensure proper timestamps
-            "-fflags",
-            "+genpts+igndts", // FIX: Generate PTS and ignore DTS issues
-            "-vsync",
-            "cfr", // FIX: Constant frame rate for proper duration
-            "-r",
-            "25", // FIX: Explicit frame rate for duration calculation
+            "+faststart+frag_keyframe+empty_moov",
+            "-strict",
+            "experimental", // COMPATIBILITY: Handle edge cases
+            "-max_muxing_queue_size",
+            "1024", // BUFFER: Prevent sync issues
+            "-analyzeduration",
+            "2147483647", // ANALYZE: Full input analysis
+            "-probesize",
+            "2147483647", // PROBE: Complete stream detection
         ],
     },
     low: {
@@ -56,24 +52,22 @@ export const QUALITY_PRESETS: Record<string, QualityPreset> = {
         videoCodec: "libx264",
         audioCodec: "aac",
         audioBitrate: "96k",
-        crf: 28,
-        preset: "ultrafast", // IMPROVED: Changed from "fast" for maximum speed
+        crf: 30,
+        preset: "fast", // ROBUST: Faster but still compatible
         pixelFormat: "yuv420p",
         additionalFlags: [
-            "-hwaccel",
-            "auto", // ADDED: Hardware acceleration
+            "-f",
+            "mp4", // FORCE: Explicit MP4 format
             "-movflags",
-            "+faststart+write_colr",
-            "-tune",
-            "zerolatency", // ADDED: For faster encoding
-            "-avoid_negative_ts",
-            "make_zero", // FIX: Ensure proper timestamps
-            "-fflags",
-            "+genpts+igndts", // FIX: Generate PTS and ignore DTS issues
-            "-vsync",
-            "cfr", // FIX: Constant frame rate for proper duration
-            "-r",
-            "25", // FIX: Explicit frame rate for duration calculation
+            "+faststart+frag_keyframe+empty_moov",
+            "-strict",
+            "experimental", // COMPATIBILITY: Handle edge cases
+            "-max_muxing_queue_size",
+            "1024", // BUFFER: Prevent sync issues
+            "-analyzeduration",
+            "2147483647", // ANALYZE: Full input analysis
+            "-probesize",
+            "2147483647", // PROBE: Complete stream detection
         ],
     },
 }
