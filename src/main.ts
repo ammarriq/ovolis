@@ -67,7 +67,7 @@ const createWindow = () => {
 
         if (mainWindow) mainWindow.close()
 
-        return floatingWindow
+        return { success: true }
     })
 
     ipcMain.handle("close-floating-bar", () => {
