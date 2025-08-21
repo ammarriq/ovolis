@@ -1,12 +1,9 @@
-import type { ConversionProgress } from "./types/ffmpeg.js"
 import type { ScreenSource } from "./types/screen-sources.js"
 
 import path from "node:path"
 import { app, BrowserWindow, ipcMain, shell } from "electron"
 import started from "electron-squirrel-startup"
 
-import { getAllPresets, getPresetByName } from "./utils/ffmpeg-config.js"
-import { ffmpegManager } from "./utils/ffmpeg-manager.js"
 import { createFloatingBar } from "./utils/floating-bar.js"
 import { saveRecording, startRecording } from "./utils/start-recording.js"
 import { takeScreenshot } from "./utils/take-screenshots.js"
@@ -101,116 +98,7 @@ const createWindow = () => {
         }
     )
 
-    // FFmpeg operations
-    ipcMain.handle("ffmpeg-check-availability", async () => {
-        return await ffmpegManager.checkFFmpegAvailability()
-    })
-
-    ipcMain.handle("ffmpeg-get-presets", () => {
-        return getAllPresets()
-    })
-
-    ipcMain.handle(
-        "ffmpeg-convert-video",
-        async (
-            _,
-            config: {
-                inputPath: string
-                outputPath: string
-                presetName: string
-            }
-        ) => {
-            const preset = getPresetByName(config.presetName)
-
-            return new Promise((resolve, reject) => {
-                ffmpegManager
-                    .convertVideo({
-                        inputPath: config.inputPath,
-                        outputPath: config.outputPath,
-                        preset,
-                        onProgress: (progress: ConversionProgress) => {
-                            // Send progress updates to renderer
-                            if (
-                                floatingWindow &&
-                                !floatingWindow.isDestroyed()
-                            ) {
-                                floatingWindow.webContents.send(
-                                    "ffmpeg-progress",
-                                    progress
-                                )
-                            }
-                        },
-                        onComplete: (outputPath: string) => {
-                            resolve({ success: true, outputPath })
-                        },
-                        onError: (error: string) => {
-                            reject(new Error(error))
-                        },
-                    })
-                    .then(resolve)
-                    .catch(reject)
-            })
-        }
-    )
-
-    ipcMain.handle("ffmpeg-cancel-conversion", () => {
-        ffmpegManager.cancelConversion()
-        ffmpegManager.cancelStreamingConversion()
-        return { success: true }
-    })
-
-    // FFmpeg streaming (stdin) operations
-    ipcMain.handle(
-        "ffmpeg-stream-start",
-        (
-            _,
-            config: {
-                outputPath: string
-                presetName: string
-                inputFormat?: string
-            }
-        ) => {
-            const preset = getPresetByName(config.presetName)
-            const sessionId = ffmpegManager.startStreamingConversion(
-                config.outputPath,
-                preset,
-                (progress: ConversionProgress) => {
-                    if (floatingWindow && !floatingWindow.isDestroyed()) {
-                        floatingWindow.webContents.send(
-                            "ffmpeg-progress",
-                            progress
-                        )
-                    }
-                },
-                config.inputFormat || "webm"
-            )
-            return { success: true, sessionId }
-        }
-    )
-
-    ipcMain.handle(
-        "ffmpeg-stream-write",
-        async (_, sessionId: string, chunk: Uint8Array) => {
-            const ok = ffmpegManager.writeStreamChunk(
-                sessionId,
-                Buffer.from(chunk)
-            )
-            return { success: true, ok }
-        }
-    )
-
-    ipcMain.handle("ffmpeg-stream-stop", async (_, sessionId: string) => {
-        const result = await ffmpegManager.stopStreamingConversion(sessionId)
-        return result
-    })
-
-    ipcMain.handle(
-        "ffmpeg-stream-cancel",
-        async (_, sessionId?: string) => {
-            ffmpegManager.cancelStreamingConversion(sessionId)
-            return { success: true }
-        }
-    )
+    // FFmpeg handlers removed; recording is saved directly as WebM
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         const filePath = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/app.recorder.html`

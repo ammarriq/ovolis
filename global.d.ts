@@ -1,4 +1,3 @@
-import type { ConversionProgress, QualityPreset } from "~/types/ffmpeg"
 import type { ScreenSource } from "~/types/screen-sources"
 
 // Declare electron API types
@@ -28,36 +27,6 @@ declare global {
 
             createFloatingBar: (source: ScreenSource) => Promise<void>
             closeFloatingBar: () => Promise<void>
-
-            // FFmpeg operations
-            ffmpegCheckAvailability: () => Promise<boolean>
-            ffmpegGetPresets: () => Promise<QualityPreset[]>
-            ffmpegConvertVideo: (config: {
-                inputPath: string
-                outputPath: string
-                presetName: string
-            }) => Promise<{ success: boolean; outputPath?: string }>
-            ffmpegCancelConversion: () => Promise<{ success: boolean }>
-            // Streaming APIs
-            ffmpegStreamStart: (config: {
-                outputPath: string
-                presetName: string
-                inputFormat?: string
-            }) => Promise<{ success: boolean; sessionId: string }>
-            ffmpegStreamWrite: (
-                sessionId: string,
-                chunk: Uint8Array
-            ) => Promise<{ success: boolean; ok: boolean }>
-            ffmpegStreamStop: (
-                sessionId: string
-            ) => Promise<{ success: boolean; outputPath?: string; error?: string }>
-            ffmpegStreamCancel: (
-                sessionId?: string
-            ) => Promise<{ success: boolean }>
-            onFFmpegProgress: (
-                callback: (progress: ConversionProgress) => void
-            ) => void
-            removeFFmpegProgressListener: () => void
         }
     }
 }

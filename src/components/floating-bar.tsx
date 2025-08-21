@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react"
 
 import type { ScreenSource } from "~/types/screen-sources"
 
-import ConversionProgress from "./conversion-progress"
-
 interface FloatingBarProps {
     source: ScreenSource
     isVisible: boolean
@@ -19,14 +17,13 @@ const FloatingBar = ({
 }: FloatingBarProps) => {
     const [isRecording, setIsRecording] = useState(false)
     const [recordingTime, setRecordingTime] = useState(0)
-    const [isConverting, setIsConverting] = useState(false)
-    const [conversionProgress, setConversionProgress] = useState<string>("")
+    // Removed FFmpeg conversion state
     const [isStartingRecording, setIsStartingRecording] = useState(false)
 
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
-    const streamSessionIdRef = useRef<string | null>(null)
+    const chunksRef = useRef<Blob[]>([])
 
     useEffect(() => {
         if (isRecording) {
@@ -91,9 +88,9 @@ const FloatingBar = ({
             }
             streamRef.current = stream
 
-            // Use WebM format with CPU-friendly codec selection
-            let mimeType = "video/webm;codecs=vp8"
-            let videoBitrate = 2000000
+            // Use WebM format with high-quality codec selection
+            let mimeType = "video/webm;codecs=vp9"
+            let videoBitrate = 8000000 // default 8 Mbps, will adjust dynamically
 
             // DIAGNOSTIC: Log codec support
             console.log("=== CODEC DIAGNOSTICS ===")
@@ -110,76 +107,63 @@ const FloatingBar = ({
                 MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
             )
 
-            // Progressive codec selection for quality balance - FIXED BITRATES
+            // Prefer VP9 > VP8 > H264-in-WebM (if available)
             if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
                 mimeType = "video/webm;codecs=vp9"
-                videoBitrate = 6000000 // 6 Mbps for VP9 - HIGH QUALITY
-                console.log("Selected codec: VP9 at 6 Mbps - HIGH QUALITY")
+                console.log("Selected codec: VP9 (preferred)")
+            } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+                mimeType = "video/webm;codecs=vp8"
+                console.log("Selected codec: VP8 (fallback)")
             } else if (
                 MediaRecorder.isTypeSupported("video/webm;codecs=h264")
             ) {
                 mimeType = "video/webm;codecs=h264"
-                videoBitrate = 5000000 // 5 Mbps for H264 - HIGH QUALITY
-                console.log("Selected codec: H264 at 5 Mbps - HIGH QUALITY")
-            } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
-                mimeType = "video/webm;codecs=vp8"
-                videoBitrate = 4000000 // 4 Mbps for VP8 - IMPROVED FROM 1.5 Mbps
-                console.log("Selected codec: VP8 at 4 Mbps - IMPROVED QUALITY")
+                console.log("Selected codec: H264-in-WebM (last resort)")
             }
+
+            // Dynamically scale bitrate based on captured resolution/FPS
+            const videoTrack = stream.getVideoTracks()[0]
+            const settings = videoTrack?.getSettings
+                ? videoTrack.getSettings()
+                : {}
+            const width = (settings as any).width ?? 1920
+            const height = (settings as any).height ?? 1080
+            const fps = (settings as any).frameRate ?? 30
+
+            // Heuristic: bits-per-pixel-per-frame ~0.1 for high quality desktop capture
+            const targetBpppf = 0.1
+            const computed = Math.round(width * height * fps * targetBpppf)
+
+            // Clamp to sane range: 8 Mbps (1080p) up to 25 Mbps (4K60)
+            videoBitrate = Math.min(Math.max(computed, 8_000_000), 25_000_000)
+            console.log("Dynamic bitrate (bps):", videoBitrate, {
+                width,
+                height,
+                fps,
+            })
 
             console.log("Final recording settings:", {
                 mimeType,
                 videoBitrate: `${videoBitrate / 1000000} Mbps`,
-                audioBitrate: "128 kbps",
-                dataCollectionInterval: "200ms - BALANCED FOR SMOOTH CURSOR",
+                audioBitrate: "192 kbps",
+                dataCollectionInterval: "500ms - REDUCED FOR SMOOTH CURSOR",
             })
 
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType,
                 videoBitsPerSecond: videoBitrate,
-                audioBitsPerSecond: 128000,
+                audioBitsPerSecond: 192000,
             })
             mediaRecorderRef.current = mediaRecorder
 
-            // Start FFmpeg streaming session BEFORE recording
-            const { sessionId } = await window.electronAPI.ffmpegStreamStart({
-                outputPath: recordingConfig.filePath,
-                presetName: "high",
-                inputFormat: "webm",
-            })
-            streamSessionIdRef.current = sessionId
-
-            // Progress listener for FFmpeg
-            if (window.electronAPI.onFFmpegProgress) {
-                window.electronAPI.onFFmpegProgress((progress) => {
-                    const percentage = progress.percentage || 0
-                    if (percentage > 0) {
-                        setConversionProgress(
-                            `Converting... ${percentage.toFixed(1)}%`
-                        )
-                    } else if (progress.frame !== undefined) {
-                        setConversionProgress(
-                            `Processing frame ${progress.frame}`
-                        )
-                    } else {
-                        setConversionProgress("Converting...")
-                    }
-                })
-            }
-
-            // Pipe incoming data chunks directly to FFmpeg via IPC
+            // Collect MediaRecorder chunks locally
             mediaRecorder.ondataavailable = async (event) => {
                 try {
-                    if (event.data.size > 0 && streamSessionIdRef.current) {
-                        const arrayBuffer = await event.data.arrayBuffer()
-                        const uint8Array = new Uint8Array(arrayBuffer)
-                        await window.electronAPI.ffmpegStreamWrite(
-                            streamSessionIdRef.current,
-                            uint8Array
-                        )
+                    if (event.data && event.data.size > 0) {
+                        chunksRef.current.push(event.data)
                     }
                 } catch (e) {
-                    console.error("Stream write error:", e)
+                    console.error("Chunk collect error:", e)
                 }
             }
 
@@ -196,53 +180,30 @@ const FloatingBar = ({
             }
 
             mediaRecorder.onstop = async () => {
-                // Show conversion progress while FFmpeg finalizes output
-                setIsConverting(true)
-                setConversionProgress("Finalizing conversion...")
-
                 try {
-                    if (streamSessionIdRef.current) {
-                        const result =
-                            await window.electronAPI.ffmpegStreamStop(
-                                streamSessionIdRef.current
-                            )
-                        if (!result.success) {
-                            throw new Error(result.error || "FFmpeg failed")
-                        }
-                    }
+                    const blob = new Blob(chunksRef.current, { type: mimeType })
+                    chunksRef.current = []
+                    const arrayBuffer = await blob.arrayBuffer()
+                    const uint8 = new Uint8Array(arrayBuffer)
 
-                    setConversionProgress("Conversion completed!")
-                    setTimeout(() => {
-                        alert(`✅ Recording saved: ${recordingConfig.filePath}`)
-                        if (window.electronAPI.openFolder) {
-                            window.electronAPI.openFolder(
-                                recordingConfig.filePath
-                            )
-                        }
-                        setIsConverting(false)
-                        setConversionProgress("")
-                        setIsRecording(false)
-                        setRecordingTime(0)
-                        onSourceChange(null)
-                        onClose()
-                    }, 1200)
-                } catch (err) {
-                    console.error("Streaming stop error:", err)
-                    setConversionProgress("Conversion failed")
-                    setTimeout(() => {
-                        alert(`❌ Failed to save recording: ${err}`)
-                        setIsConverting(false)
-                        setConversionProgress("")
-                        setIsRecording(false)
-                        setRecordingTime(0)
-                        onSourceChange(null)
-                        onClose()
-                    }, 1500)
-                } finally {
-                    if (window.electronAPI.removeFFmpegProgressListener) {
-                        window.electronAPI.removeFFmpegProgressListener()
+                    const msg = await window.electronAPI.saveRecording(
+                        recordingConfig.filePath,
+                        uint8
+                    )
+                    console.log(msg)
+
+                    alert(`✅ Recording saved: ${recordingConfig.filePath}`)
+                    if (window.electronAPI.openFolder) {
+                        window.electronAPI.openFolder(recordingConfig.filePath)
                     }
-                    streamSessionIdRef.current = null
+                } catch (err) {
+                    console.error("Save recording error:", err)
+                    alert(`❌ Failed to save recording: ${err}`)
+                } finally {
+                    setIsRecording(false)
+                    setRecordingTime(0)
+                    onSourceChange(null)
+                    onClose()
                 }
             }
 
@@ -260,14 +221,14 @@ const FloatingBar = ({
                 }))
             )
 
-            mediaRecorder.start(200) // Balanced timeslice for smooth cursor and performance
+            mediaRecorder.start(500) // Larger timeslice to reduce cursor stuttering
             setIsRecording(true)
             setRecordingTime(0)
             setIsStartingRecording(false)
 
             console.log(`✅ Recording started for: ${source.name}`)
             console.log(
-                "✅ OPTIMIZED: Using 200ms data collection interval for balanced performance!"
+                "✅ OPTIMIZED: Using 500ms data collection interval for smooth cursor!"
             )
         } catch (error) {
             console.error("Error starting recording:", error)
@@ -323,18 +284,10 @@ const FloatingBar = ({
                     </div>
                 )}
 
-                {/* Conversion status */}
-                {isConverting && (
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                        <span className="text-white text-sm">
-                            {conversionProgress}
-                        </span>
-                    </div>
-                )}
+                {/* Conversion status removed */}
 
                 {/* Record/Stop buttons */}
-                {!isRecording && !isConverting ? (
+                {!isRecording ? (
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
@@ -344,13 +297,17 @@ const FloatingBar = ({
                         }}
                         disabled={isStartingRecording}
                         className={`${
-                            isStartingRecording 
-                                ? "bg-gray-500 cursor-not-allowed" 
+                            isStartingRecording
+                                ? "bg-gray-500 cursor-not-allowed"
                                 : "bg-red-600 hover:bg-red-700 cursor-pointer"
                         } text-white px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-2`}
                     >
-                        <div className={`w-3 h-3 ${isStartingRecording ? "bg-gray-300 animate-pulse" : "bg-white"} rounded-full`}></div>
-                        {isStartingRecording ? "Starting..." : "Start Recording"}
+                        <div
+                            className={`w-3 h-3 ${isStartingRecording ? "bg-gray-300 animate-pulse" : "bg-white"} rounded-full`}
+                        ></div>
+                        {isStartingRecording
+                            ? "Starting..."
+                            : "Start Recording"}
                     </button>
                 ) : isRecording ? (
                     <button
@@ -370,18 +327,6 @@ const FloatingBar = ({
                     </div>
                 )}
             </div>
-
-            {/* Conversion Progress Component */}
-            <ConversionProgress
-                isVisible={isConverting}
-                onCancel={() => {
-                    if (window.electronAPI.ffmpegCancelConversion) {
-                        window.electronAPI.ffmpegCancelConversion()
-                    }
-                    setIsConverting(false)
-                    setConversionProgress("")
-                }}
-            />
         </div>
     )
 }

@@ -3,8 +3,6 @@ import { app, desktopCapturer } from "electron"
 import { writeFile } from "fs/promises"
 import path from "path"
 
-import { fileProcessor } from "./file-processor.js"
-
 export async function startRecording(
     sourceId: string,
     sourceName: string
@@ -25,7 +23,7 @@ export async function startRecording(
 
         // Create a timestamp for the recording filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
-        const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.mp4`
+        const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.webm`
 
         // Get the user's desktop path for saving recordings
         const desktopPath = path.join(
@@ -50,16 +48,21 @@ export async function startRecording(
                     mandatory: {
                         chromeMediaSource: "desktop",
                         chromeMediaSourceId: targetSource.id,
-                        cursor: "always", // Always show cursor for consistent visibility
-                        minWidth: 1280,
-                        maxWidth: 1920, // Further reduced to prevent WGC errors
-                        minHeight: 720,
-                        maxHeight: 1080, // Further reduced to prevent WGC errors
-                        minFrameRate: 24,
-                        maxFrameRate: 30, // Moderate frame rate to reduce system load
-                        // Add cursor-specific optimizations
-                        googCpuOveruseDetection: false, // Disable CPU overuse detection for smoother cursor
-                        googNoiseReduction: false, // Disable noise reduction for better cursor clarity
+                        cursor: "always",
+                        // Prefer up to 4K/60 if available, with sensible minimums
+                        minWidth: 1920,
+                        maxWidth: 3840,
+                        minHeight: 1080,
+                        maxHeight: 2160,
+                        minFrameRate: 30,
+                        maxFrameRate: 60,
+                        // Keep WebRTC processing minimal for fidelity
+                        googCpuOveruseDetection: false,
+                        googNoiseReduction: false,
+                        googEchoCancellation: false,
+                        googAutoGainControl: false,
+                        googHighpassFilter: false,
+                        googTypingNoiseDetection: false
                     },
                 },
             },
@@ -67,12 +70,7 @@ export async function startRecording(
 
         console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
         console.log("Recording constraints:", recordingConfig.constraints)
-        console.log(
-            "✅ Using 30-60fps target for smoother cursor and motion - FIXED"
-        )
-        console.log(
-            "Note: Capped at 1080p to avoid WGC capture stability issues"
-        )
+        console.log("✅ Targeting up to 4K@60 if available; will fall back gracefully.")
         console.log("Source info:", {
             id: targetSource.id,
             name: targetSource.name,
@@ -99,52 +97,14 @@ export async function saveRecording(
             fs.promises.mkdir(dir, { recursive: true })
         )
 
-        // Create temporary WebM file path
-        const tempWebmPath = filePath.replace(".mp4", "_temp.webm")
+        // Save the recording file directly (WebM)
+        await writeFile(filePath, buffer)
 
-        // Save the WebM recording file first
-        await writeFile(tempWebmPath, buffer)
-        console.log(`WebM file saved temporarily to: ${tempWebmPath}`)
-
-        // Process the recording with FFmpeg conversion
-        const processingResult = await fileProcessor.processRecording({
-            inputPath: tempWebmPath,
-            outputPath: filePath,
-            presetName: "high", // Use high quality preset
-            keepOriginal: false, // Delete the temporary WebM file after conversion
-            onProgress: (progress) => {
-                console.log("Conversion progress:", progress)
-            },
-            onComplete: (outputPath) => {
-                console.log("Conversion completed:", outputPath)
-            },
-            onError: (error) => {
-                console.error("Conversion error:", error)
-            },
-        })
-
-        if (processingResult.success) {
-            const message = processingResult.fallbackUsed
-                ? `Recording saved (WebM format) to: ${processingResult.outputPath}`
-                : `Recording converted and saved to: ${processingResult.outputPath}`
-
-            console.log(message)
-            return message
-        } else {
-            throw new Error(
-                processingResult.error || "Failed to process recording"
-            )
-        }
+        const message = `Recording saved successfully to: ${filePath}`
+        console.log(message)
+        return message
     } catch (error) {
         console.error("Error saving recording:", error)
-
-        // Clean up any temporary files
-        try {
-            await fileProcessor.cleanup()
-        } catch (cleanupError) {
-            console.error("Error during cleanup:", cleanupError)
-        }
-
         throw new Error(
             `Failed to save recording: ${error instanceof Error ? error.message : String(error)}`
         )

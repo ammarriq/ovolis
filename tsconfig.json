@@ -5,6 +5,14 @@
         "global.d.ts",
         "src/utils/window-manager.ts"
     ],
+    "exclude": [
+        "src/utils/ffmpeg-*.ts",
+        "src/utils/file-processor.ts",
+        "src/utils/progress-reporter.ts",
+        "src/utils/ffmpeg-manager.ts",
+        "src/types/ffmpeg.ts",
+        "src/components/conversion-progress.tsx"
+    ],
     "compilerOptions": {
         "target": "ESNext",
         "module": "esnext",
