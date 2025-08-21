@@ -23,7 +23,7 @@ export async function startRecording(
 
         // Create a timestamp for the recording filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
-        const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.webm`
+        const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.mp4`
 
         // Get the user's desktop path for saving recordings
         const desktopPath = path.join(
@@ -62,7 +62,7 @@ export async function startRecording(
                         googEchoCancellation: false,
                         googAutoGainControl: false,
                         googHighpassFilter: false,
-                        googTypingNoiseDetection: false
+                        googTypingNoiseDetection: false,
                     },
                 },
             },
@@ -70,7 +70,9 @@ export async function startRecording(
 
         console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
         console.log("Recording constraints:", recordingConfig.constraints)
-        console.log("✅ Targeting up to 4K@60 if available; will fall back gracefully.")
+        console.log(
+            "✅ Targeting up to 4K@60 if available; will fall back gracefully."
+        )
         console.log("Source info:", {
             id: targetSource.id,
             name: targetSource.name,
@@ -97,7 +99,7 @@ export async function saveRecording(
             fs.promises.mkdir(dir, { recursive: true })
         )
 
-        // Save the recording file directly (WebM)
+        // Save the recording file directly (mp4)
         await writeFile(filePath, buffer)
 
         const message = `Recording saved successfully to: ${filePath}`

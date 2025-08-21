@@ -98,7 +98,7 @@ const createWindow = () => {
         }
     )
 
-    // FFmpeg handlers removed; recording is saved directly as WebM
+    // FFmpeg handlers removed; recording is saved directly as mp4
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         const filePath = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/app.recorder.html`

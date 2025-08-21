@@ -88,37 +88,35 @@ const FloatingBar = ({
             }
             streamRef.current = stream
 
-            // Use WebM format with high-quality codec selection
-            let mimeType = "video/webm;codecs=vp9"
+            // Use mp4 format with high-quality codec selection
+            let mimeType = "video/mp4;codecs=vp9"
             let videoBitrate = 8000000 // default 8 Mbps, will adjust dynamically
 
             // DIAGNOSTIC: Log codec support
             console.log("=== CODEC DIAGNOSTICS ===")
             console.log(
                 "VP8 support:",
-                MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+                MediaRecorder.isTypeSupported("video/mp4;codecs=vp8")
             )
             console.log(
                 "H264 support:",
-                MediaRecorder.isTypeSupported("video/webm;codecs=h264")
+                MediaRecorder.isTypeSupported("video/mp4;codecs=h264")
             )
             console.log(
                 "VP9 support:",
-                MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+                MediaRecorder.isTypeSupported("video/mp4;codecs=vp9")
             )
 
-            // Prefer VP9 > VP8 > H264-in-WebM (if available)
-            if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
-                mimeType = "video/webm;codecs=vp9"
+            // Prefer VP9 > VP8 > H264-in-mp4 (if available)
+            if (MediaRecorder.isTypeSupported("video/mp4;codecs=vp9")) {
+                mimeType = "video/mp4;codecs=vp9"
                 console.log("Selected codec: VP9 (preferred)")
-            } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
-                mimeType = "video/webm;codecs=vp8"
+            } else if (MediaRecorder.isTypeSupported("video/mp4;codecs=vp8")) {
+                mimeType = "video/mp4;codecs=vp8"
                 console.log("Selected codec: VP8 (fallback)")
-            } else if (
-                MediaRecorder.isTypeSupported("video/webm;codecs=h264")
-            ) {
-                mimeType = "video/webm;codecs=h264"
-                console.log("Selected codec: H264-in-WebM (last resort)")
+            } else if (MediaRecorder.isTypeSupported("video/mp4;codecs=h264")) {
+                mimeType = "video/mp4;codecs=h264"
+                console.log("Selected codec: H264-in-mp4 (last resort)")
             }
 
             // Dynamically scale bitrate based on captured resolution/FPS

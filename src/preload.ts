@@ -35,5 +35,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("close-floating-bar")
     },
 
-    // FFmpeg APIs removed; recordings are saved directly as WebM
+    // FFmpeg APIs removed; recordings are saved directly as mp4
 } satisfies Window["electronAPI"])
