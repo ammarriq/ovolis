@@ -38,6 +38,22 @@ declare global {
                 presetName: string
             }) => Promise<{ success: boolean; outputPath?: string }>
             ffmpegCancelConversion: () => Promise<{ success: boolean }>
+            // Streaming APIs
+            ffmpegStreamStart: (config: {
+                outputPath: string
+                presetName: string
+                inputFormat?: string
+            }) => Promise<{ success: boolean; sessionId: string }>
+            ffmpegStreamWrite: (
+                sessionId: string,
+                chunk: Uint8Array
+            ) => Promise<{ success: boolean; ok: boolean }>
+            ffmpegStreamStop: (
+                sessionId: string
+            ) => Promise<{ success: boolean; outputPath?: string; error?: string }>
+            ffmpegStreamCancel: (
+                sessionId?: string
+            ) => Promise<{ success: boolean }>
             onFFmpegProgress: (
                 callback: (progress: ConversionProgress) => void
             ) => void

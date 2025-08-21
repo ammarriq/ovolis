@@ -15,8 +15,8 @@ export default defineConfig({
     build: {
         rollupOptions: {
             input: {
-                main: path.resolve(__dirname, "index.html"),
-                floating: path.resolve(__dirname, "floating-window.html"),
+                main: path.resolve(__dirname, "app.recorder.html"),
+                floating: path.resolve(__dirname, "app.floating-bar.html"),
             },
         },
     },

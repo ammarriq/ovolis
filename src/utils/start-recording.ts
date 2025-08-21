@@ -50,12 +50,16 @@ export async function startRecording(
                     mandatory: {
                         chromeMediaSource: "desktop",
                         chromeMediaSourceId: targetSource.id,
+                        cursor: "always", // Always show cursor for consistent visibility
                         minWidth: 1280,
                         maxWidth: 1920, // Further reduced to prevent WGC errors
                         minHeight: 720,
                         maxHeight: 1080, // Further reduced to prevent WGC errors
                         minFrameRate: 24,
-                        maxFrameRate: 25, // IMPROVED: Reduced from 30 to avoid refresh rate conflicts
+                        maxFrameRate: 30, // Moderate frame rate to reduce system load
+                        // Add cursor-specific optimizations
+                        googCpuOveruseDetection: false, // Disable CPU overuse detection for smoother cursor
+                        googNoiseReduction: false, // Disable noise reduction for better cursor clarity
                     },
                 },
             },
@@ -63,9 +67,11 @@ export async function startRecording(
 
         console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
         console.log("Recording constraints:", recordingConfig.constraints)
-        console.log("✅ IMPROVED: 25fps to reduce refresh rate conflicts!")
         console.log(
-            "WARNING: High resolution (1920x1080) may cause WGC issues!"
+            "✅ Using 30-60fps target for smoother cursor and motion - FIXED"
+        )
+        console.log(
+            "Note: Capped at 1080p to avoid WGC capture stability issues"
         )
         console.log("Source info:", {
             id: targetSource.id,

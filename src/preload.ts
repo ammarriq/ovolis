@@ -53,6 +53,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ffmpegCancelConversion: () => {
         return ipcRenderer.invoke("ffmpeg-cancel-conversion")
     },
+    // Streaming APIs
+    ffmpegStreamStart: (config: {
+        outputPath: string
+        presetName: string
+        inputFormat?: string
+    }) => {
+        return ipcRenderer.invoke("ffmpeg-stream-start", config)
+    },
+    ffmpegStreamWrite: (sessionId: string, chunk: Uint8Array) => {
+        return ipcRenderer.invoke("ffmpeg-stream-write", sessionId, chunk)
+    },
+    ffmpegStreamStop: (sessionId: string) => {
+        return ipcRenderer.invoke("ffmpeg-stream-stop", sessionId)
+    },
+    ffmpegStreamCancel: (sessionId?: string) => {
+        return ipcRenderer.invoke("ffmpeg-stream-cancel", sessionId)
+    },
     onFFmpegProgress: (callback: (progress: ConversionProgress) => void) => {
         ipcRenderer.on("ffmpeg-progress", (_, progress) => callback(progress))
     },

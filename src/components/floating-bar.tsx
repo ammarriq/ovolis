@@ -21,10 +21,12 @@ const FloatingBar = ({
     const [recordingTime, setRecordingTime] = useState(0)
     const [isConverting, setIsConverting] = useState(false)
     const [conversionProgress, setConversionProgress] = useState<string>("")
+    const [isStartingRecording, setIsStartingRecording] = useState(false)
 
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
+    const streamSessionIdRef = useRef<string | null>(null)
 
     useEffect(() => {
         if (isRecording) {
@@ -52,6 +54,7 @@ const FloatingBar = ({
             return
         }
 
+        setIsStartingRecording(true)
         try {
             // DIAGNOSTIC: Log display information
             console.log("=== RECORDING DIAGNOSTICS ===")
@@ -128,8 +131,7 @@ const FloatingBar = ({
                 mimeType,
                 videoBitrate: `${videoBitrate / 1000000} Mbps`,
                 audioBitrate: "128 kbps",
-                dataCollectionInterval:
-                    "100ms - OPTIMIZED FOR SMOOTH RECORDING",
+                dataCollectionInterval: "200ms - BALANCED FOR SMOOTH CURSOR",
             })
 
             const mediaRecorder = new MediaRecorder(stream, {
@@ -139,10 +141,45 @@ const FloatingBar = ({
             })
             mediaRecorderRef.current = mediaRecorder
 
-            const chunks: Blob[] = []
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    chunks.push(event.data)
+            // Start FFmpeg streaming session BEFORE recording
+            const { sessionId } = await window.electronAPI.ffmpegStreamStart({
+                outputPath: recordingConfig.filePath,
+                presetName: "high",
+                inputFormat: "webm",
+            })
+            streamSessionIdRef.current = sessionId
+
+            // Progress listener for FFmpeg
+            if (window.electronAPI.onFFmpegProgress) {
+                window.electronAPI.onFFmpegProgress((progress) => {
+                    const percentage = progress.percentage || 0
+                    if (percentage > 0) {
+                        setConversionProgress(
+                            `Converting... ${percentage.toFixed(1)}%`
+                        )
+                    } else if (progress.frame !== undefined) {
+                        setConversionProgress(
+                            `Processing frame ${progress.frame}`
+                        )
+                    } else {
+                        setConversionProgress("Converting...")
+                    }
+                })
+            }
+
+            // Pipe incoming data chunks directly to FFmpeg via IPC
+            mediaRecorder.ondataavailable = async (event) => {
+                try {
+                    if (event.data.size > 0 && streamSessionIdRef.current) {
+                        const arrayBuffer = await event.data.arrayBuffer()
+                        const uint8Array = new Uint8Array(arrayBuffer)
+                        await window.electronAPI.ffmpegStreamWrite(
+                            streamSessionIdRef.current,
+                            uint8Array
+                        )
+                    }
+                } catch (e) {
+                    console.error("Stream write error:", e)
                 }
             }
 
@@ -159,69 +196,41 @@ const FloatingBar = ({
             }
 
             mediaRecorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: "video/mp4" })
-                const arrayBuffer = await blob.arrayBuffer()
-                const uint8Array = new Uint8Array(arrayBuffer)
-
-                // Show conversion progress
+                // Show conversion progress while FFmpeg finalizes output
                 setIsConverting(true)
-                setConversionProgress("Starting conversion...")
+                setConversionProgress("Finalizing conversion...")
 
                 try {
-                    // Set up progress listener
-                    if (window.electronAPI.onFFmpegProgress) {
-                        window.electronAPI.onFFmpegProgress((progress) => {
-                            const percentage = progress.percentage || 0
-                            if (percentage > 0) {
-                                setConversionProgress(
-                                    `Converting... ${percentage.toFixed(1)}%`
-                                )
-                            } else if (progress.frame !== undefined) {
-                                setConversionProgress(
-                                    `Processing frame ${progress.frame}`
-                                )
-                            } else {
-                                setConversionProgress("Converting...")
-                            }
-                        })
+                    if (streamSessionIdRef.current) {
+                        const result =
+                            await window.electronAPI.ffmpegStreamStop(
+                                streamSessionIdRef.current
+                            )
+                        if (!result.success) {
+                            throw new Error(result.error || "FFmpeg failed")
+                        }
                     }
 
-                    const saveResult = await window.electronAPI.saveRecording(
-                        recordingConfig.filePath,
-                        uint8Array
-                    )
-                    console.log("Save result:", saveResult)
-
-                    // Update conversion progress
                     setConversionProgress("Conversion completed!")
-
-                    // Show success message
                     setTimeout(() => {
-                        alert(`✅ Recording saved: ${saveResult}`)
-
-                        // Open the folder where recordings are saved
+                        alert(`✅ Recording saved: ${recordingConfig.filePath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(
                                 recordingConfig.filePath
                             )
                         }
-
-                        // Reset states and close
                         setIsConverting(false)
                         setConversionProgress("")
                         setIsRecording(false)
                         setRecordingTime(0)
                         onSourceChange(null)
                         onClose()
-                    }, 1500)
-                } catch (saveError) {
-                    console.error("Save error:", saveError)
+                    }, 1200)
+                } catch (err) {
+                    console.error("Streaming stop error:", err)
                     setConversionProgress("Conversion failed")
-
                     setTimeout(() => {
-                        alert(`❌ Failed to save recording: ${saveError}`)
-
-                        // Reset states
+                        alert(`❌ Failed to save recording: ${err}`)
                         setIsConverting(false)
                         setConversionProgress("")
                         setIsRecording(false)
@@ -230,10 +239,10 @@ const FloatingBar = ({
                         onClose()
                     }, 1500)
                 } finally {
-                    // Clean up progress listener
                     if (window.electronAPI.removeFFmpegProgressListener) {
                         window.electronAPI.removeFFmpegProgressListener()
                     }
+                    streamSessionIdRef.current = null
                 }
             }
 
@@ -251,16 +260,18 @@ const FloatingBar = ({
                 }))
             )
 
-            mediaRecorder.start(100) // FIXED: Reduced from 2000ms to 100ms to prevent blinking
+            mediaRecorder.start(200) // Balanced timeslice for smooth cursor and performance
             setIsRecording(true)
             setRecordingTime(0)
+            setIsStartingRecording(false)
 
             console.log(`✅ Recording started for: ${source.name}`)
             console.log(
-                "✅ FIXED: Using 100ms data collection interval for smooth recording!"
+                "✅ OPTIMIZED: Using 200ms data collection interval for balanced performance!"
             )
         } catch (error) {
             console.error("Error starting recording:", error)
+            setIsStartingRecording(false)
             alert(
                 `❌ Failed to start recording: ${error instanceof Error ? error.message : String(error)}`
             )
@@ -327,13 +338,19 @@ const FloatingBar = ({
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            startRecording()
+                            if (!isStartingRecording) {
+                                startRecording()
+                            }
                         }}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center gap-2"
-                        style={{ cursor: "pointer" }}
+                        disabled={isStartingRecording}
+                        className={`${
+                            isStartingRecording 
+                                ? "bg-gray-500 cursor-not-allowed" 
+                                : "bg-red-600 hover:bg-red-700 cursor-pointer"
+                        } text-white px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-2`}
                     >
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                        Start Recording
+                        <div className={`w-3 h-3 ${isStartingRecording ? "bg-gray-300 animate-pulse" : "bg-white"} rounded-full`}></div>
+                        {isStartingRecording ? "Starting..." : "Start Recording"}
                     </button>
                 ) : isRecording ? (
                     <button

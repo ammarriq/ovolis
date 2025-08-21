@@ -155,8 +155,62 @@ const createWindow = () => {
 
     ipcMain.handle("ffmpeg-cancel-conversion", () => {
         ffmpegManager.cancelConversion()
+        ffmpegManager.cancelStreamingConversion()
         return { success: true }
     })
+
+    // FFmpeg streaming (stdin) operations
+    ipcMain.handle(
+        "ffmpeg-stream-start",
+        (
+            _,
+            config: {
+                outputPath: string
+                presetName: string
+                inputFormat?: string
+            }
+        ) => {
+            const preset = getPresetByName(config.presetName)
+            const sessionId = ffmpegManager.startStreamingConversion(
+                config.outputPath,
+                preset,
+                (progress: ConversionProgress) => {
+                    if (floatingWindow && !floatingWindow.isDestroyed()) {
+                        floatingWindow.webContents.send(
+                            "ffmpeg-progress",
+                            progress
+                        )
+                    }
+                },
+                config.inputFormat || "webm"
+            )
+            return { success: true, sessionId }
+        }
+    )
+
+    ipcMain.handle(
+        "ffmpeg-stream-write",
+        async (_, sessionId: string, chunk: Uint8Array) => {
+            const ok = ffmpegManager.writeStreamChunk(
+                sessionId,
+                Buffer.from(chunk)
+            )
+            return { success: true, ok }
+        }
+    )
+
+    ipcMain.handle("ffmpeg-stream-stop", async (_, sessionId: string) => {
+        const result = await ffmpegManager.stopStreamingConversion(sessionId)
+        return result
+    })
+
+    ipcMain.handle(
+        "ffmpeg-stream-cancel",
+        async (_, sessionId?: string) => {
+            ffmpegManager.cancelStreamingConversion(sessionId)
+            return { success: true }
+        }
+    )
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         const filePath = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/app.recorder.html`

@@ -2,6 +2,7 @@ import type {
     ConversionProgress,
     FFmpegConfig,
     FFmpegResult,
+    QualityPreset,
 } from "../types/ffmpeg.js"
 import type { ChildProcess } from "child_process"
 
@@ -11,12 +12,19 @@ import { spawn } from "child_process"
 import fs from "fs/promises"
 import path from "path"
 
-import { buildFFmpegArgs } from "./ffmpeg-config.js"
+import { buildFFmpegArgs, buildFFmpegArgsFromStdin } from "./ffmpeg-config.js"
 
 export class FFmpegManager {
     private static instance: FFmpegManager
     private activeProcesses: Map<string, ChildProcess> = new Map()
     private ffmpegPath: string
+    private activeStreamSessions: Map<
+        string,
+        {
+            process: ChildProcess
+            errorData: string
+        }
+    > = new Map()
 
     private constructor() {
         // Resolve FFmpeg binary path
@@ -31,15 +39,15 @@ export class FFmpegManager {
     }
 
     private getFFmpegPath(): string {
-        const isDev = process.env.NODE_ENV === "development"
+        const isProd = app.isPackaged
 
-        if (isDev) {
-            // In development, use the binary from the project root
-            return path.join(process.cwd(), "binaries", "ffmpeg.exe")
-        } else {
+        if (isProd) {
             // In production, use the binary from the app resources
             const resourcesPath = process.resourcesPath || app.getAppPath()
             return path.join(resourcesPath, "binaries", "ffmpeg.exe")
+        } else {
+            // In development, use the binary from the project root
+            return path.join(process.cwd(), "binaries", "ffmpeg.exe")
         }
     }
 
@@ -300,6 +308,102 @@ export class FFmpegManager {
 
     public cleanup(): void {
         this.cancelConversion()
+    }
+
+    // STREAMING: Pipe MediaRecorder (webm) chunks directly to ffmpeg stdin
+    public startStreamingConversion(
+        outputPath: string,
+        preset: QualityPreset,
+        onProgress?: (progress: ConversionProgress) => void,
+        inputFormat: string = "webm"
+    ): string {
+        const sessionId = `${Date.now()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`
+
+        const args = buildFFmpegArgsFromStdin(outputPath, preset, inputFormat)
+
+        const ffmpegProcess = spawn(this.ffmpegPath, args, {
+            stdio: ["pipe", "pipe", "pipe"],
+        })
+
+        this.activeStreamSessions.set(sessionId, {
+            process: ffmpegProcess,
+            errorData: "",
+        })
+
+        let progressData = ""
+        ffmpegProcess.stdout?.on("data", (data: Buffer) => {
+            progressData += data.toString()
+            const progress = this.parseProgress(progressData)
+            if (progress && onProgress) {
+                onProgress(progress)
+            }
+        })
+
+        ffmpegProcess.stderr?.on("data", (data: Buffer) => {
+            const session = this.activeStreamSessions.get(sessionId)
+            if (session) session.errorData += data.toString()
+        })
+
+        ffmpegProcess.on("close", () => {
+            this.activeStreamSessions.delete(sessionId)
+        })
+
+        ffmpegProcess.on("error", () => {
+            this.activeStreamSessions.delete(sessionId)
+        })
+
+        return sessionId
+    }
+
+    public writeStreamChunk(sessionId: string, chunk: Buffer): boolean {
+        const session = this.activeStreamSessions.get(sessionId)
+        if (!session || !session.process.stdin) {
+            throw new Error(`No active streaming session: ${sessionId}`)
+        }
+        return session.process.stdin.write(chunk)
+    }
+
+    public stopStreamingConversion(sessionId: string): Promise<FFmpegResult> {
+        const session = this.activeStreamSessions.get(sessionId)
+        if (!session || !session.process.stdin) {
+            return Promise.reject(
+                new Error(`No active streaming session: ${sessionId}`)
+            )
+        }
+
+        // Signal end of input
+        session.process.stdin.end()
+
+        return new Promise((resolve) => {
+            session.process.once("close", (code) => {
+                this.activeStreamSessions.delete(sessionId)
+                if (code === 0) {
+                    resolve({ success: true })
+                } else {
+                    resolve({
+                        success: false,
+                        error:
+                            session.errorData ||
+                            `FFmpeg exited with code ${code}`,
+                    })
+                }
+            })
+        })
+    }
+
+    public cancelStreamingConversion(sessionId?: string): void {
+        if (sessionId) {
+            const session = this.activeStreamSessions.get(sessionId)
+            session?.process.kill("SIGTERM")
+            this.activeStreamSessions.delete(sessionId)
+        } else {
+            for (const [id, session] of this.activeStreamSessions) {
+                session.process.kill("SIGTERM")
+                this.activeStreamSessions.delete(id)
+            }
+        }
     }
 
     private async ensureDurationMetadata(videoPath: string): Promise<void> {

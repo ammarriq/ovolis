@@ -13,15 +13,9 @@ export const QUALITY_PRESETS: Record<string, QualityPreset> = {
             "-f",
             "mp4", // FORCE: Explicit MP4 format
             "-movflags",
-            "+faststart+frag_keyframe+empty_moov",
-            "-strict",
-            "experimental", // COMPATIBILITY: Handle edge cases
+            "+faststart", // Final files should not be fragmented; keep moov at front
             "-max_muxing_queue_size",
             "1024", // BUFFER: Prevent sync issues
-            "-analyzeduration",
-            "2147483647", // ANALYZE: Full input analysis
-            "-probesize",
-            "2147483647", // PROBE: Complete stream detection
         ],
     },
     medium: {
@@ -36,15 +30,9 @@ export const QUALITY_PRESETS: Record<string, QualityPreset> = {
             "-f",
             "mp4", // FORCE: Explicit MP4 format
             "-movflags",
-            "+faststart+frag_keyframe+empty_moov",
-            "-strict",
-            "experimental", // COMPATIBILITY: Handle edge cases
+            "+faststart", // Final files should not be fragmented; keep moov at front
             "-max_muxing_queue_size",
             "1024", // BUFFER: Prevent sync issues
-            "-analyzeduration",
-            "2147483647", // ANALYZE: Full input analysis
-            "-probesize",
-            "2147483647", // PROBE: Complete stream detection
         ],
     },
     low: {
@@ -59,15 +47,9 @@ export const QUALITY_PRESETS: Record<string, QualityPreset> = {
             "-f",
             "mp4", // FORCE: Explicit MP4 format
             "-movflags",
-            "+faststart+frag_keyframe+empty_moov",
-            "-strict",
-            "experimental", // COMPATIBILITY: Handle edge cases
+            "+faststart", // Final files should not be fragmented; keep moov at front
             "-max_muxing_queue_size",
             "1024", // BUFFER: Prevent sync issues
-            "-analyzeduration",
-            "2147483647", // ANALYZE: Full input analysis
-            "-probesize",
-            "2147483647", // PROBE: Complete stream detection
         ],
     },
 }
@@ -111,9 +93,10 @@ export function buildFFmpegArgs(
     }
 
     // Add additional flags
-    if (preset.additionalFlags) {
-        args.push(...preset.additionalFlags)
-    }
+    // For streaming, avoid fragmented MP4 and heavy probing flags; use faststart only
+    args.push("-movflags", "+faststart")
+    // Avoid negative timestamps that can break seeking in some players
+    args.push("-avoid_negative_ts", "make_zero")
 
     // Add progress reporting
     args.push("-progress", "pipe:1")
@@ -133,4 +116,58 @@ export function getPresetByName(presetName: string): QualityPreset {
 
 export function getAllPresets(): QualityPreset[] {
     return Object.values(QUALITY_PRESETS)
+}
+
+// Build args for streaming input via stdin (e.g., WebM from MediaRecorder)
+export function buildFFmpegArgsFromStdin(
+    outputPath: string,
+    preset: QualityPreset,
+    inputFormat: string = "webm"
+): string[] {
+    const args = [
+        "-f",
+        inputFormat, // input container coming from MediaRecorder
+        "-fflags",
+        "+genpts", // generate missing PTS for live input
+        "-use_wallclock_as_timestamps",
+        "1", // use wallclock for timestamps for realtime chunks
+        "-analyzeduration",
+        "0", // do not wait to analyze live input
+        "-probesize",
+        "32k", // small probe size for quick start
+        "-i",
+        "pipe:0", // read from stdin
+        "-c:v",
+        preset.videoCodec,
+        "-c:a",
+        preset.audioCodec,
+        "-b:a",
+        preset.audioBitrate,
+        // Better seeking: regular keyframes every ~1s for smoother cursor playback
+        "-force_key_frames",
+        "expr:gte(t,n_forced*1)",
+    ]
+
+    if (preset.crf !== undefined) {
+        args.push("-crf", preset.crf.toString())
+    }
+    if (preset.preset) {
+        args.push("-preset", preset.preset)
+    }
+    if (preset.pixelFormat) {
+        args.push("-pix_fmt", preset.pixelFormat)
+    }
+    if (preset.videoBitrate) {
+        args.push("-b:v", preset.videoBitrate)
+    }
+    if (preset.additionalFlags) {
+        args.push(...preset.additionalFlags)
+    }
+
+    // Progress and overwrite
+    args.push("-progress", "pipe:1")
+    args.push("-y")
+    args.push(outputPath)
+
+    return args
 }

@@ -11,7 +11,10 @@ import { VitePlugin } from "@electron-forge/plugin-vite"
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
-        extraResource: ["native/build/Release/window_manager.node"],
+        extraResource: [
+            "native/build/Release/window_manager.node",
+            "binaries/ffmpeg.exe",
+        ],
     },
     rebuildConfig: {},
     makers: [
