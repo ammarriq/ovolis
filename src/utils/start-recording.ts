@@ -39,6 +39,7 @@ export async function startRecording(
             sourceName: targetSource.name,
             filePath,
             constraints: {
+                // Enable system/desktop audio; we'll mix with mic in the renderer
                 audio: {
                     mandatory: {
                         chromeMediaSource: "desktop",

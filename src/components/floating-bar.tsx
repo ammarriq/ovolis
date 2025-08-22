@@ -23,6 +23,10 @@ const FloatingBar = ({
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
+    const screenStreamRef = useRef<MediaStream | null>(null)
+    const micStreamRef = useRef<MediaStream | null>(null)
+    const audioCtxRef = useRef<AudioContext | null>(null)
+    const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null)
     const chunksRef = useRef<Blob[]>([])
     const filePathRef = useRef<string | null>(null)
     const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
@@ -106,7 +110,70 @@ const FloatingBar = ({
                     primaryError
                 )
             }
-            streamRef.current = stream
+            // Capture microphone audio separately
+            let micStream: MediaStream | null = null
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    },
+                    video: false,
+                })
+            } catch (micErr) {
+                console.warn(
+                    "Microphone capture failed; continuing without mic:",
+                    micErr
+                )
+            }
+
+            // Mix system (desktop) audio with mic using Web Audio API
+            let mixedAudioTrack: MediaStreamTrack | undefined
+            try {
+                const hasSystemAudio = stream.getAudioTracks().length > 0
+                const hasMicAudio = micStream?.getAudioTracks().length
+                if (hasSystemAudio || hasMicAudio) {
+                    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+                    audioCtxRef.current = audioCtx
+                    const dest = audioCtx.createMediaStreamDestination()
+                    audioDestRef.current = dest
+
+                    if (hasSystemAudio) {
+                        // Create an audio-only MediaStream for system audio source
+                        const systemAudioOnly = new MediaStream(stream.getAudioTracks())
+                        const sysSource = audioCtx.createMediaStreamSource(systemAudioOnly)
+                        sysSource.connect(dest)
+                    }
+                    if (hasMicAudio) {
+                        const micAudioOnly = new MediaStream(micStream!.getAudioTracks())
+                        const micSource = audioCtx.createMediaStreamSource(micAudioOnly)
+                        micSource.connect(dest)
+                    }
+
+                    mixedAudioTrack = dest.stream.getAudioTracks()[0]
+                }
+            } catch (mixErr) {
+                console.warn("Audio mixing failed; will fallback to available audio tracks:", mixErr)
+            }
+
+            // Build final combined stream: screen video + mixed audio (or fallback to system/mic audio)
+            const combinedTracks: MediaStreamTrack[] = [
+                ...stream.getVideoTracks(),
+                ...(mixedAudioTrack
+                    ? [mixedAudioTrack]
+                    : stream.getAudioTracks().length > 0
+                    ? [stream.getAudioTracks()[0]]
+                    : micStream?.getAudioTracks()?.length
+                    ? [micStream!.getAudioTracks()[0]]
+                    : []),
+            ]
+            const combinedStream = new MediaStream(combinedTracks)
+
+            // Keep references for cleanup
+            screenStreamRef.current = stream
+            micStreamRef.current = micStream
+            streamRef.current = combinedStream
 
             // Use mp4 format with high-quality codec selection
             let mimeType = "video/mp4;codecs=vp9"
@@ -167,7 +234,7 @@ const FloatingBar = ({
                 dataCollectionInterval: "500ms - REDUCED FOR SMOOTH CURSOR",
             })
 
-            const mediaRecorder = new MediaRecorder(stream, {
+            const mediaRecorder = new MediaRecorder(streamRef.current!, {
                 mimeType,
                 videoBitsPerSecond: videoBitrate,
                 audioBitsPerSecond: 192000,
@@ -194,10 +261,7 @@ const FloatingBar = ({
                             writeQueueRef.current = writeQueueRef.current
                                 .then(doWrite)
                                 .catch((err) => {
-                                    console.error(
-                                        "Streaming write error:",
-                                        err
-                                    )
+                                    console.error("Streaming write error:", err)
                                 })
                         } else {
                             // Fallback: keep in memory
@@ -214,7 +278,28 @@ const FloatingBar = ({
                 setIsRecording(false)
                 setRecordingTime(0)
 
-                stream.getTracks().forEach((track) => track.stop())
+                if (streamRef.current) {
+                    streamRef.current
+                        .getTracks()
+                        .forEach((track) => track.stop())
+                    streamRef.current = null
+                }
+                if (screenStreamRef.current) {
+                    screenStreamRef.current.getTracks().forEach((t) => t.stop())
+                    screenStreamRef.current = null
+                }
+                if (micStreamRef.current) {
+                    micStreamRef.current.getTracks().forEach((t) => t.stop())
+                    micStreamRef.current = null
+                }
+                if (audioDestRef.current) {
+                    audioDestRef.current.stream.getTracks().forEach((t) => t.stop())
+                    audioDestRef.current = null
+                }
+                if (audioCtxRef.current) {
+                    try { await audioCtxRef.current.close() } catch {}
+                    audioCtxRef.current = null
+                }
 
                 // Clean up partial stream/file if streaming was active
                 try {
@@ -242,9 +327,10 @@ const FloatingBar = ({
                     if (streamingEnabledRef.current && filePathRef.current) {
                         // Ensure all pending writes flushed
                         await writeQueueRef.current
-                        const finalPath = await window.electronAPI.finalizeRecordingStream(
-                            filePathRef.current
-                        )
+                        const finalPath =
+                            await window.electronAPI.finalizeRecordingStream(
+                                filePathRef.current
+                            )
                         alert(`✅ Recording saved: ${finalPath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(finalPath)
@@ -262,9 +348,7 @@ const FloatingBar = ({
                             uint8
                         )
                         console.log(msg)
-                        alert(
-                            `✅ Recording saved: ${recordingConfig.filePath}`
-                        )
+                        alert(`✅ Recording saved: ${recordingConfig.filePath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(
                                 recordingConfig.filePath
@@ -289,13 +373,17 @@ const FloatingBar = ({
             console.log("MediaRecorder state:", mediaRecorder.state)
             console.log(
                 "Stream tracks:",
-                stream.getTracks().map((track) => ({
-                    kind: track.kind,
-                    label: track.label,
-                    enabled: track.enabled,
-                    readyState: track.readyState,
-                    settings: track.getSettings ? track.getSettings() : "N/A",
-                }))
+                streamRef.current
+                    ?.getTracks()
+                    .map((track) => ({
+                        kind: track.kind,
+                        label: track.label,
+                        enabled: track.enabled,
+                        readyState: track.readyState,
+                        settings: track.getSettings
+                            ? track.getSettings()
+                            : "N/A",
+                    }))
             )
 
             mediaRecorder.start(500) // Larger timeslice to reduce cursor stuttering
@@ -326,6 +414,22 @@ const FloatingBar = ({
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop())
             streamRef.current = null
+        }
+        if (screenStreamRef.current) {
+            screenStreamRef.current.getTracks().forEach((t) => t.stop())
+            screenStreamRef.current = null
+        }
+        if (micStreamRef.current) {
+            micStreamRef.current.getTracks().forEach((t) => t.stop())
+            micStreamRef.current = null
+        }
+        if (audioDestRef.current) {
+            audioDestRef.current.stream.getTracks().forEach((t) => t.stop())
+            audioDestRef.current = null
+        }
+        if (audioCtxRef.current) {
+            audioCtxRef.current.close().catch(() => {})
+            audioCtxRef.current = null
         }
 
         // Reset state will be handled in mediaRecorder.onstop
