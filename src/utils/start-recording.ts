@@ -2,6 +2,7 @@ import { app, desktopCapturer } from "electron"
 
 import { writeFile } from "fs/promises"
 import path from "path"
+import { fixMp4Metadata } from "./ffmpeg-post.js"
 
 export async function startRecording(
     sourceId: string,
@@ -102,7 +103,10 @@ export async function saveRecording(
         // Save the recording file directly (mp4)
         await writeFile(filePath, buffer)
 
-        const message = `Recording saved successfully to: ${filePath}`
+        // Post-process with ffmpeg to fix metadata and enable faststart
+        const fixedPath = await fixMp4Metadata(filePath)
+
+        const message = `Recording saved successfully to: ${fixedPath}`
         console.log(message)
         return message
     } catch (error) {

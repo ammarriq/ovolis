@@ -13,6 +13,7 @@ import {
     writeRecordingChunk,
     deletePartialRecording,
 } from "./utils/recording-stream.js"
+import { fixMp4Metadata } from "./utils/ffmpeg-post.js"
 import { takeScreenshot } from "./utils/take-screenshots.js"
 import { focusWindow, resizeWindow } from "./utils/window-manager.js"
 
@@ -131,7 +132,10 @@ const createWindow = () => {
     ipcMain.handle(
         "finalize-recording-stream",
         async (_, filePath: string): Promise<string> => {
-            return await finalizeRecordingStream(filePath)
+            const finalized = await finalizeRecordingStream(filePath)
+            // Run ffmpeg post-process to fix metadata / faststart
+            const fixed = await fixMp4Metadata(finalized)
+            return fixed
         }
     )
 
