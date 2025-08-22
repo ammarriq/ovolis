@@ -6,6 +6,13 @@ import started from "electron-squirrel-startup"
 
 import { createFloatingBar } from "./utils/floating-bar.js"
 import { saveRecording, startRecording } from "./utils/start-recording.js"
+import {
+    closeRecordingStream,
+    finalizeRecordingStream,
+    openRecordingStream,
+    writeRecordingChunk,
+    deletePartialRecording,
+} from "./utils/recording-stream.js"
 import { takeScreenshot } from "./utils/take-screenshots.js"
 import { focusWindow, resizeWindow } from "./utils/window-manager.js"
 
@@ -95,6 +102,43 @@ const createWindow = () => {
         async (_, filePath: string, uint8Array: Uint8Array) => {
             const buffer = Buffer.from(uint8Array)
             return await saveRecording(filePath, buffer)
+        }
+    )
+
+    // Streaming save APIs
+    ipcMain.handle(
+        "open-recording-stream",
+        async (_, filePath: string): Promise<string> => {
+            return await openRecordingStream(filePath)
+        }
+    )
+
+    ipcMain.handle(
+        "write-recording-chunk",
+        async (_, filePath: string, uint8Array: Uint8Array): Promise<void> => {
+            const buffer = Buffer.from(uint8Array)
+            return await writeRecordingChunk(filePath, buffer)
+        }
+    )
+
+    ipcMain.handle(
+        "close-recording-stream",
+        async (_, filePath: string): Promise<void> => {
+            return await closeRecordingStream(filePath)
+        }
+    )
+
+    ipcMain.handle(
+        "finalize-recording-stream",
+        async (_, filePath: string): Promise<string> => {
+            return await finalizeRecordingStream(filePath)
+        }
+    )
+
+    ipcMain.handle(
+        "delete-partial-recording",
+        async (_, filePath: string): Promise<void> => {
+            return await deletePartialRecording(filePath)
         }
     )
 

@@ -24,6 +24,9 @@ const FloatingBar = ({
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
     const chunksRef = useRef<Blob[]>([])
+    const filePathRef = useRef<string | null>(null)
+    const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
+    const streamingEnabledRef = useRef<boolean>(false)
 
     useEffect(() => {
         if (isRecording) {
@@ -72,6 +75,23 @@ const FloatingBar = ({
             })
             const recordingConfig = JSON.parse(recordingConfigStr)
             console.log("Recording config:", recordingConfig)
+
+            // Open streaming write on main process to save chunks as they arrive
+            filePathRef.current = recordingConfig.filePath as string
+            try {
+                await window.electronAPI.openRecordingStream(
+                    recordingConfig.filePath
+                )
+                streamingEnabledRef.current = true
+                writeQueueRef.current = Promise.resolve()
+                console.log("Streaming recording enabled (writing to .part)")
+            } catch (e) {
+                streamingEnabledRef.current = false
+                console.warn(
+                    "Streaming not available, falling back to buffered save:",
+                    e
+                )
+            }
 
             // Start actual recording with fallback mechanism
             let stream: MediaStream
@@ -154,24 +174,64 @@ const FloatingBar = ({
             })
             mediaRecorderRef.current = mediaRecorder
 
-            // Collect MediaRecorder chunks locally
+            // Collect MediaRecorder chunks: stream to disk if enabled, else buffer
             mediaRecorder.ondataavailable = async (event) => {
                 try {
                     if (event.data && event.data.size > 0) {
-                        chunksRef.current.push(event.data)
+                        if (
+                            streamingEnabledRef.current &&
+                            filePathRef.current
+                        ) {
+                            const doWrite = async () => {
+                                const ab = await event.data.arrayBuffer()
+                                const uint8 = new Uint8Array(ab)
+                                await window.electronAPI.writeRecordingChunk(
+                                    filePathRef.current!,
+                                    uint8
+                                )
+                            }
+                            // Chain writes to keep order
+                            writeQueueRef.current = writeQueueRef.current
+                                .then(doWrite)
+                                .catch((err) => {
+                                    console.error(
+                                        "Streaming write error:",
+                                        err
+                                    )
+                                })
+                        } else {
+                            // Fallback: keep in memory
+                            chunksRef.current.push(event.data)
+                        }
                     }
                 } catch (e) {
-                    console.error("Chunk collect error:", e)
+                    console.error("Chunk handling error:", e)
                 }
             }
 
-            mediaRecorder.onerror = (event) => {
+            mediaRecorder.onerror = async (event) => {
                 console.error("MediaRecorder error:", event)
                 setIsRecording(false)
                 setRecordingTime(0)
 
                 stream.getTracks().forEach((track) => track.stop())
 
+                // Clean up partial stream/file if streaming was active
+                try {
+                    if (streamingEnabledRef.current && filePathRef.current) {
+                        await writeQueueRef.current
+                        await window.electronAPI.closeRecordingStream(
+                            filePathRef.current
+                        )
+                        await window.electronAPI.deletePartialRecording(
+                            filePathRef.current
+                        )
+                    }
+                } catch (cleanupErr) {
+                    console.warn("Cleanup after error failed:", cleanupErr)
+                } finally {
+                    streamingEnabledRef.current = false
+                }
                 alert(
                     "❌ Recording error occurred. This may be due to capture issues."
                 )
@@ -179,20 +239,37 @@ const FloatingBar = ({
 
             mediaRecorder.onstop = async () => {
                 try {
-                    const blob = new Blob(chunksRef.current, { type: mimeType })
-                    chunksRef.current = []
-                    const arrayBuffer = await blob.arrayBuffer()
-                    const uint8 = new Uint8Array(arrayBuffer)
-
-                    const msg = await window.electronAPI.saveRecording(
-                        recordingConfig.filePath,
-                        uint8
-                    )
-                    console.log(msg)
-
-                    alert(`✅ Recording saved: ${recordingConfig.filePath}`)
-                    if (window.electronAPI.openFolder) {
-                        window.electronAPI.openFolder(recordingConfig.filePath)
+                    if (streamingEnabledRef.current && filePathRef.current) {
+                        // Ensure all pending writes flushed
+                        await writeQueueRef.current
+                        const finalPath = await window.electronAPI.finalizeRecordingStream(
+                            filePathRef.current
+                        )
+                        alert(`✅ Recording saved: ${finalPath}`)
+                        if (window.electronAPI.openFolder) {
+                            window.electronAPI.openFolder(finalPath)
+                        }
+                    } else {
+                        // Fallback: save buffered blob
+                        const blob = new Blob(chunksRef.current, {
+                            type: mimeType,
+                        })
+                        chunksRef.current = []
+                        const arrayBuffer = await blob.arrayBuffer()
+                        const uint8 = new Uint8Array(arrayBuffer)
+                        const msg = await window.electronAPI.saveRecording(
+                            recordingConfig.filePath,
+                            uint8
+                        )
+                        console.log(msg)
+                        alert(
+                            `✅ Recording saved: ${recordingConfig.filePath}`
+                        )
+                        if (window.electronAPI.openFolder) {
+                            window.electronAPI.openFolder(
+                                recordingConfig.filePath
+                            )
+                        }
                     }
                 } catch (err) {
                     console.error("Save recording error:", err)
@@ -202,6 +279,8 @@ const FloatingBar = ({
                     setRecordingTime(0)
                     onSourceChange(null)
                     onClose()
+                    streamingEnabledRef.current = false
+                    filePathRef.current = null
                 }
             }
 

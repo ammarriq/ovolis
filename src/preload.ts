@@ -18,11 +18,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("focus-window", windowTitle)
     },
 
-    startRecording: (source) => {
+    startRecording: (source: { id: string; name: string }) => {
         return ipcRenderer.invoke("start-recording", source)
     },
     saveRecording: (filePath: string, buffer: Uint8Array) => {
         return ipcRenderer.invoke("save-recording", filePath, buffer)
+    },
+    openRecordingStream: (filePath: string) => {
+        return ipcRenderer.invoke("open-recording-stream", filePath)
+    },
+    writeRecordingChunk: (filePath: string, buffer: Uint8Array) => {
+        return ipcRenderer.invoke("write-recording-chunk", filePath, buffer)
+    },
+    closeRecordingStream: (filePath: string) => {
+        return ipcRenderer.invoke("close-recording-stream", filePath)
+    },
+    finalizeRecordingStream: (filePath: string) => {
+        return ipcRenderer.invoke("finalize-recording-stream", filePath)
+    },
+    deletePartialRecording: (filePath: string) => {
+        return ipcRenderer.invoke("delete-partial-recording", filePath)
     },
     openFolder: (filePath: string) => {
         return ipcRenderer.invoke("open-folder", filePath)

@@ -23,6 +23,14 @@ declare global {
                 filePath: string,
                 buffer: Uint8Array
             ) => Promise<string>
+            openRecordingStream: (filePath: string) => Promise<string>
+            writeRecordingChunk: (
+                filePath: string,
+                buffer: Uint8Array
+            ) => Promise<void>
+            closeRecordingStream: (filePath: string) => Promise<void>
+            finalizeRecordingStream: (filePath: string) => Promise<string>
+            deletePartialRecording: (filePath: string) => Promise<void>
             openFolder: (filePath: string) => Promise<void>
 
             createFloatingBar: (source: ScreenSource) => Promise<void>
