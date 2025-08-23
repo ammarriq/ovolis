@@ -62,6 +62,15 @@ const Recorder = () => {
         }
     }
 
+    const getMediaDevices = async () => {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices()
+            console.log(devices)
+        } catch (error) {
+            console.error("Failed to enumerate media devices:", error)
+        }
+    }
+
     return (
         <>
             {/* Main Window */}
@@ -69,6 +78,7 @@ const Recorder = () => {
                 <Header />
 
                 <div className="p-4 mt-10 overflow-y-auto">
+                    <button onClick={getMediaDevices}>Get Media Devices</button>
                     {modal ? (
                         <div className="flex gap-4 justify-center flex-wrap">
                             {screenSources.map((source) => (
