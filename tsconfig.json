@@ -26,6 +26,7 @@
         "outDir": "dist",
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
+        "types": ["vite/client"],
         "paths": {
             "~/*": ["src/*"]
         }

@@ -24,18 +24,23 @@ if (started) {
 
 function getIconPath(): string {
     const isDev = !app.isPackaged
-
+    // Resolve from project root in dev; from resources in production
     if (isDev) {
-        // In development, go up from dist to project root, then to src
-        return path.join(__dirname, "assets/icons/icon.png")
-    } else {
-        // In production, icon is in the app.asar or resources
         if (process.platform === "win32") {
-            return path.join(__dirname, "assets/icons/icon.ico")
+            return path.join(process.cwd(), "src/assets/icons/icon.ico")
         } else if (process.platform === "darwin") {
-            return path.join(__dirname, "assets/icons/icon.icns")
+            return path.join(process.cwd(), "src/assets/icons/icon.icns")
         } else {
-            return path.join(__dirname, "assets/icons/icon.png")
+            return path.join(process.cwd(), "src/assets/icons/icon.png")
+        }
+    } else {
+        // We copy `src/assets/icons` into resources as `icons/`
+        if (process.platform === "win32") {
+            return path.join(process.resourcesPath, "icons", "icon.ico")
+        } else if (process.platform === "darwin") {
+            return path.join(process.resourcesPath, "icons", "icon.icns")
+        } else {
+            return path.join(process.resourcesPath, "icons", "icon.png")
         }
     }
 }
@@ -46,14 +51,15 @@ let floatingWindow: BrowserWindow | null = null
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
-        minWidth: 800,
-        minHeight: 600,
+        width: 355,
+        height: 72,
+        minWidth: 355,
+        minHeight: 72,
         frame: false,
         transparent: true,
         titleBarStyle: "hidden",
         alwaysOnTop: true,
+        resizable: false,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
@@ -112,60 +118,42 @@ const createWindow = () => {
     })
 
     // recording options
-    ipcMain.handle(
-        "start-recording",
-        (_, source: Pick<ScreenSource, "id" | "name">) => {
-            return startRecording(source.id, source.name)
-        }
-    )
+    ipcMain.handle("start-recording", (_, source: Pick<ScreenSource, "id" | "name">) => {
+        return startRecording(source.id, source.name)
+    })
 
-    ipcMain.handle(
-        "save-recording",
-        async (_, filePath: string, uint8Array: Uint8Array) => {
-            const buffer = Buffer.from(uint8Array)
-            return await saveRecording(filePath, buffer)
-        }
-    )
+    ipcMain.handle("save-recording", async (_, filePath: string, uint8Array: Uint8Array) => {
+        const buffer = Buffer.from(uint8Array)
+        return await saveRecording(filePath, buffer)
+    })
 
     // Streaming save APIs
-    ipcMain.handle(
-        "open-recording-stream",
-        async (_, filePath: string): Promise<string> => {
-            return await openRecordingStream(filePath)
-        }
-    )
+    ipcMain.handle("open-recording-stream", async (_, filePath: string): Promise<string> => {
+        return await openRecordingStream(filePath)
+    })
 
     ipcMain.handle(
         "write-recording-chunk",
         async (_, filePath: string, uint8Array: Uint8Array): Promise<void> => {
             const buffer = Buffer.from(uint8Array)
             return await writeRecordingChunk(filePath, buffer)
-        }
+        },
     )
 
-    ipcMain.handle(
-        "close-recording-stream",
-        async (_, filePath: string): Promise<void> => {
-            return await closeRecordingStream(filePath)
-        }
-    )
+    ipcMain.handle("close-recording-stream", async (_, filePath: string): Promise<void> => {
+        return await closeRecordingStream(filePath)
+    })
 
-    ipcMain.handle(
-        "finalize-recording-stream",
-        async (_, filePath: string): Promise<string> => {
-            const finalized = await finalizeRecordingStream(filePath)
-            // Run ffmpeg post-process to fix metadata / faststart
-            const fixed = await fixMp4Metadata(finalized)
-            return fixed
-        }
-    )
+    ipcMain.handle("finalize-recording-stream", async (_, filePath: string): Promise<string> => {
+        const finalized = await finalizeRecordingStream(filePath)
+        // Run ffmpeg post-process to fix metadata / faststart
+        const fixed = await fixMp4Metadata(finalized)
+        return fixed
+    })
 
-    ipcMain.handle(
-        "delete-partial-recording",
-        async (_, filePath: string): Promise<void> => {
-            return await deletePartialRecording(filePath)
-        }
-    )
+    ipcMain.handle("delete-partial-recording", async (_, filePath: string): Promise<void> => {
+        return await deletePartialRecording(filePath)
+    })
 
     // FFmpeg handlers removed; recording is saved directly as mp4
 

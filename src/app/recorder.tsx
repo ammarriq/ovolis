@@ -6,11 +6,32 @@ import { createRoot } from "react-dom/client"
 import Header from "./-header"
 import { DragIcon } from "~/icons/drag"
 import { CloseIcon } from "~/icons/close"
+import { WindowIcon } from "~/icons/window"
+import AppIcon from "../assets/icons/icon.png"
+import {
+    Button,
+    ListBox,
+    ListBoxItem,
+    Menu,
+    MenuItem,
+    MenuTrigger,
+    Popover,
+    Select,
+    SelectValue,
+} from "react-aria-components"
+import { FullScreenIcon } from "~/icons/full-screen"
+import { CameraIcon } from "~/icons/camera"
+import { MicIcon } from "~/icons/mic"
+import { VolumeIcon } from "~/icons/volume"
 
 const Recorder = () => {
     const [modal, setModal] = useState(false)
     const [screenSources, setScreenSources] = useState<ScreenSource[]>([])
     const [selectedSource, setSelectedSource] = useState<ScreenSource>(null)
+
+    const [isCameraOn, setIsCameraOn] = useState(true)
+    const [isMicOn, setIsMicOn] = useState(true)
+    const [isVolumeOn, setIsVolumeOn] = useState(true)
 
     useEffect(() => {
         // const loadScreenSources = () => {
@@ -41,14 +62,10 @@ const Recorder = () => {
                 setScreenSources(sources)
             } catch (error) {
                 console.error("Failed to get screen sources:", error)
-                alert(
-                    "Failed to get screen sources. Make sure you are running in Electron."
-                )
+                alert("Failed to get screen sources. Make sure you are running in Electron.")
             }
         } else {
-            alert(
-                "This feature is only available in the Electron app, not in web preview."
-            )
+            alert("This feature is only available in the Electron app, not in web preview.")
         }
     }
 
@@ -74,22 +91,84 @@ const Recorder = () => {
     }
 
     return (
-        <div className="w-full h-screen flex flex-col p-2">
-            <div className="overflow-y-auto w-80 h-100 bg-background rounded-2xl shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
-                <header
-                    className="flex items-center justify-between p-4"
-                    style={{ WebkitAppRegion: "drag" }}
-                >
-                    <button className="cursor-move">
-                        <DragIcon />
+        <div className="flex flex-col p-2">
+            <div
+                className="bg-background flex items-center gap-4 overflow-y-auto rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]"
+                style={{ WebkitAppRegion: "drag" }}
+            >
+                <div
+                    className="size-6"
+                    style={{ backgroundImage: `url(${AppIcon})`, backgroundSize: "cover" }}
+                />
+
+                <div className="self-stretch border-r"></div>
+
+                <div className="flex gap-4">
+                    <button style={{ WebkitAppRegion: "no-drag" }}>
+                        <FullScreenIcon />
+                    </button>
+                    <button style={{ WebkitAppRegion: "no-drag" }}>
+                        <WindowIcon />
+                    </button>
+                </div>
+
+                <div className="self-stretch border-r"></div>
+
+                <div className="flex gap-4">
+                    <button
+                        className="relative"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                        onClick={() => setIsCameraOn(!isCameraOn)}
+                    >
+                        <CameraIcon />
+                        {!isCameraOn ? (
+                            <div className="border-foreground absolute top-1/2 left-1/2 w-7 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
+                        ) : null}
                     </button>
                     <button
+                        className="relative"
                         style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={() => window.electronAPI?.closeWindow()}
+                        onClick={() => setIsMicOn(!isMicOn)}
                     >
-                        <CloseIcon />
+                        <MicIcon />
+                        {!isMicOn ? (
+                            <div className="border-foreground absolute top-1/2 left-1/2 w-7 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
+                        ) : null}
                     </button>
-                </header>
+                    <button
+                        className="relative"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                        onClick={() => setIsVolumeOn(!isVolumeOn)}
+                    >
+                        <VolumeIcon />
+                        {!isVolumeOn ? (
+                            <div className="border-foreground absolute top-1/2 left-1/2 w-7 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
+                        ) : null}
+                    </button>
+                </div>
+
+                <div className="self-stretch border-r"></div>
+
+                <button
+                    style={{ WebkitAppRegion: "no-drag" }}
+                    onClick={() => window.electronAPI?.closeWindow()}
+                >
+                    <CloseIcon strokeWidth={2} className="size-4" />
+                </button>
+
+                {/* <main className="bg-background grow rounded-t-2xl p-4 shadow-[0px_-2px_8px_-8px_rgba(0,0,0,0.35)]">
+                    <Select placeholder="Camera">
+                        <Button className="bg-accent w-full rounded-md border px-2 py-1 text-left">
+                            <SelectValue />
+                        </Button>
+                        <Popover>
+                            <ListBox>
+                                <ListBoxItem>No Camera</ListBoxItem>
+                                <ListBoxItem>Microphone</ListBoxItem>
+                            </ListBox>
+                        </Popover>
+                    </Select>
+                </main> */}
 
                 {/* {modal ? (
                     <div className="flex gap-4 justify-center flex-wrap">
@@ -133,9 +212,9 @@ const Recorder = () => {
                 )} */}
             </div>
 
-            <div className="rounded-2xl w-80 p-4 mt-4 bg-background shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
+            {/* <div className="bg-background mt-4 w-80 rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
                 <p>Recording in progress...</p>
-            </div>
+            </div> */}
         </div>
     )
 }

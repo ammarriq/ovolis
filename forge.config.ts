@@ -14,12 +14,17 @@ const config: ForgeConfig = {
         extraResource: [
             "native/build/Release/window_manager.node",
             "binaries/ffmpeg.exe",
+            // Ensure icons are available at runtime in production
+            "src/assets/icons",
         ],
         icon: "src/assets/icons/icon",
     },
     rebuildConfig: {},
     makers: [
-        new MakerSquirrel({}),
+        new MakerSquirrel({
+            // Use .ico for the Windows installer
+            setupIcon: "src/assets/icons/icon.ico",
+        }),
         new MakerZIP({}, ["darwin"]),
         new MakerRpm({}),
         new MakerDeb({}),
