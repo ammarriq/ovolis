@@ -22,6 +22,24 @@ if (started) {
     app.quit()
 }
 
+function getIconPath(): string {
+    const isDev = !app.isPackaged
+
+    if (isDev) {
+        // In development, go up from dist to project root, then to src
+        return path.join(__dirname, "assets/icons/icon.png")
+    } else {
+        // In production, icon is in the app.asar or resources
+        if (process.platform === "win32") {
+            return path.join(__dirname, "assets/icons/icon.ico")
+        } else if (process.platform === "darwin") {
+            return path.join(__dirname, "assets/icons/icon.icns")
+        } else {
+            return path.join(__dirname, "assets/icons/icon.png")
+        }
+    }
+}
+
 // Global window references
 let mainWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
@@ -32,13 +50,16 @@ const createWindow = () => {
         height: 600,
         minWidth: 800,
         minHeight: 600,
+        frame: false,
+        transparent: true,
         titleBarStyle: "hidden",
-        maximizable: true,
+        alwaysOnTop: true,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
             nodeIntegration: false,
         },
+        icon: getIconPath(),
     })
 
     mainWindow.setMenuBarVisibility(false)

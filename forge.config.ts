@@ -15,6 +15,7 @@ const config: ForgeConfig = {
             "native/build/Release/window_manager.node",
             "binaries/ffmpeg.exe",
         ],
+        icon: "src/assets/icons/icon",
     },
     rebuildConfig: {},
     makers: [

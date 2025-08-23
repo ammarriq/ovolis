@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
 
 import Header from "./-header"
+import { DragIcon } from "~/icons/drag"
+import { CloseIcon } from "~/icons/close"
 
 const Recorder = () => {
     const [modal, setModal] = useState(false)
@@ -72,59 +74,69 @@ const Recorder = () => {
     }
 
     return (
-        <>
-            {/* Main Window */}
-            <div className="w-full h-screen bg-background shadow-lg flex flex-col border">
-                <Header />
+        <div className="w-full h-screen flex flex-col p-2">
+            <div className="overflow-y-auto w-80 h-100 bg-background rounded-2xl shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
+                <header
+                    className="flex items-center justify-between p-4"
+                    style={{ WebkitAppRegion: "drag" }}
+                >
+                    <button className="cursor-move">
+                        <DragIcon />
+                    </button>
+                    <button
+                        style={{ WebkitAppRegion: "no-drag" }}
+                        onClick={() => window.electronAPI?.closeWindow()}
+                    >
+                        <CloseIcon />
+                    </button>
+                </header>
 
-                <div className="p-4 mt-10 overflow-y-auto">
-                    <button onClick={getMediaDevices}>Get Media Devices</button>
-                    {modal ? (
-                        <div className="flex gap-4 justify-center flex-wrap">
-                            {screenSources.map((source) => (
-                                <button
-                                    key={source.id}
-                                    className="w-80 overflow-hidden gap-4 justify-between border flex flex-col hover:bg-accent p-2 rounded-md"
-                                    onClick={() => selectSource(source)}
-                                >
-                                    <img
-                                        src={source.thumbnail}
-                                        className="rounded-sm"
-                                        alt={source.name}
-                                    />
-                                    <p className="truncate text-sm">
-                                        {source.name}
-                                    </p>
-                                </button>
-                            ))}
-                            <button onClick={() => setModal(false)}>
-                                Close
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center p-4 grow justify-center overflow-y-auto gap-4">
+                {/* {modal ? (
+                    <div className="flex gap-4 justify-center flex-wrap">
+                        {screenSources.map((source) => (
                             <button
-                                onClick={() => getScreenSources()}
-                                className="cursor-pointer size-24 rounded-full bg-primary grid place-items-center text-foreground-primary font-bold"
+                                key={source.id}
+                                className="w-80 overflow-hidden gap-4 justify-between border flex flex-col hover:bg-accent p-2 rounded-md"
+                                onClick={() => selectSource(source)}
                             >
-                                Record
+                                <img
+                                    src={source.thumbnail}
+                                    className="rounded-sm"
+                                    alt={source.name}
+                                />
+                                <p className="truncate text-sm">
+                                    {source.name}
+                                </p>
                             </button>
-                            {selectedSource && (
-                                <div className="text-center mt-4">
-                                    <p className="text-sm text-gray-600">
-                                        Recording controls opened in floating
-                                        window
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        Selected: {selectedSource.name}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        ))}
+                        <button onClick={() => setModal(false)}>Close</button>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center p-4 grow justify-center overflow-y-auto gap-4">
+                        <button
+                            onClick={() => getScreenSources()}
+                            className="cursor-pointer size-24 rounded-full bg-primary grid place-items-center text-foreground-primary font-bold"
+                        >
+                            Record
+                        </button>
+                        {selectedSource && (
+                            <div className="text-center mt-4">
+                                <p className="text-sm text-gray-600">
+                                    Recording controls opened in floating window
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    Selected: {selectedSource.name}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )} */}
             </div>
-        </>
+
+            <div className="rounded-2xl w-80 p-4 mt-4 bg-background shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
+                <p>Recording in progress...</p>
+            </div>
+        </div>
     )
 }
 

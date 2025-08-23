@@ -7,7 +7,7 @@ export function CloseIcon(props: SVGProps<SVGSVGElement>) {
             width={16}
             height={16}
             viewBox="0 0 16 16"
-            strokeWidth={1}
+            strokeWidth={1.75}
             {...props}
         >
             <path
