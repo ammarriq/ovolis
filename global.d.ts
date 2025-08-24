@@ -4,6 +4,7 @@ import type { ScreenSource } from "~/types/screen-sources"
 declare global {
     interface Window {
         electronAPI: {
+            setWindowSize: (width: number, height: number) => Promise<void>
             minimizeWindow: () => Promise<void>
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>
@@ -15,19 +16,10 @@ declare global {
                 height: number
             }) => Promise<void>
             focusWindow: (windowTitle: string) => Promise<string>
-            startRecording: (source: {
-                id: string
-                name: string
-            }) => Promise<string>
-            saveRecording: (
-                filePath: string,
-                buffer: Uint8Array
-            ) => Promise<string>
+            startRecording: (source: { id: string; name: string }) => Promise<string>
+            saveRecording: (filePath: string, buffer: Uint8Array) => Promise<string>
             openRecordingStream: (filePath: string) => Promise<string>
-            writeRecordingChunk: (
-                filePath: string,
-                buffer: Uint8Array
-            ) => Promise<void>
+            writeRecordingChunk: (filePath: string, buffer: Uint8Array) => Promise<void>
             closeRecordingStream: (filePath: string) => Promise<void>
             finalizeRecordingStream: (filePath: string) => Promise<string>
             deletePartialRecording: (filePath: string) => Promise<void>

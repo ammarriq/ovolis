@@ -51,10 +51,10 @@ let floatingWindow: BrowserWindow | null = null
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
-        width: 355,
-        height: 72,
-        minWidth: 355,
-        minHeight: 72,
+        width: 306,
+        height: 99,
+        minWidth: 306,
+        minHeight: 99,
         frame: false,
         transparent: true,
         titleBarStyle: "hidden",
@@ -71,6 +71,10 @@ const createWindow = () => {
     mainWindow.setMenuBarVisibility(false)
 
     // window actions
+    ipcMain.handle("set-window-size", (_, width: number, height: number) => {
+        if (mainWindow) mainWindow.setSize(width, height)
+    })
+
     ipcMain.handle("window-close", () => {
         if (mainWindow) mainWindow.close()
     })

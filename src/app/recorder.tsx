@@ -23,6 +23,10 @@ import { FullScreenIcon } from "~/icons/full-screen"
 import { CameraIcon } from "~/icons/camera"
 import { MicIcon } from "~/icons/mic"
 import { VolumeIcon } from "~/icons/volume"
+import { cn } from "~/utils/cn"
+import { SettingsIcon } from "~/icons/settings"
+import { CropScreenIcon } from "~/icons/crop-screen"
+import { CustomScreenIcon } from "~/icons/custom-screen"
 
 const Recorder = () => {
     const [modal, setModal] = useState(false)
@@ -97,64 +101,85 @@ const Recorder = () => {
                 style={{ WebkitAppRegion: "drag" }}
             >
                 <div
-                    className="size-6"
+                    className="size-7 shrink-0"
                     style={{ backgroundImage: `url(${AppIcon})`, backgroundSize: "cover" }}
                 />
 
-                <div className="self-stretch border-r"></div>
+                <div className="h-6 border-r"></div>
 
-                <div className="flex gap-4">
-                    <button style={{ WebkitAppRegion: "no-drag" }}>
-                        <FullScreenIcon />
+                <div className="flex gap-2">
+                    <button
+                        className="bg-primary text-primary-foreground relative grid size-7 shrink-0 place-items-center rounded-full"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                    >
+                        <FullScreenIcon className="size-4.5" />
                     </button>
-                    <button style={{ WebkitAppRegion: "no-drag" }}>
-                        <WindowIcon />
+                    <button
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                    >
+                        <CustomScreenIcon className="size-4.5" />
+                    </button>
+                    <button
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                    >
+                        <WindowIcon className="size-4.5" />
                     </button>
                 </div>
 
-                <div className="self-stretch border-r"></div>
+                {/* <div className="h-6 border-r"></div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-2">
                     <button
-                        className="relative"
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
                         onClick={() => setIsCameraOn(!isCameraOn)}
                     >
-                        <CameraIcon />
+                        <CameraIcon className="size-4.5" />
                         {!isCameraOn ? (
-                            <div className="border-foreground absolute top-1/2 left-1/2 w-7 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
+                            <div className="border-foreground absolute top-1/2 left-1/2 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
                         ) : null}
                     </button>
                     <button
-                        className="relative"
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
                         onClick={() => setIsMicOn(!isMicOn)}
                     >
-                        <MicIcon />
+                        <MicIcon className="size-4.5" />
                         {!isMicOn ? (
-                            <div className="border-foreground absolute top-1/2 left-1/2 w-7 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
+                            <div className="border-foreground absolute top-1/2 left-1/2 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
                         ) : null}
                     </button>
                     <button
-                        className="relative"
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
                         onClick={() => setIsVolumeOn(!isVolumeOn)}
                     >
-                        <VolumeIcon />
+                        <VolumeIcon className="size-4.5" />
                         {!isVolumeOn ? (
-                            <div className="border-foreground absolute top-1/2 left-1/2 w-7 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
+                            <div className="border-foreground absolute top-1/2 left-1/2 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
                         ) : null}
                     </button>
+                </div> */}
+
+                <div className="h-6 border-r"></div>
+
+                <div className="flex gap-2">
+                    <button
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                    >
+                        <SettingsIcon strokeWidth={2} className="size-4.5" />
+                    </button>
+                    <button
+                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
+                        style={{ WebkitAppRegion: "no-drag" }}
+                        onClick={() => window.electronAPI?.closeWindow()}
+                    >
+                        <CloseIcon strokeWidth={2} className="size-4.5" />
+                    </button>
                 </div>
-
-                <div className="self-stretch border-r"></div>
-
-                <button
-                    style={{ WebkitAppRegion: "no-drag" }}
-                    onClick={() => window.electronAPI?.closeWindow()}
-                >
-                    <CloseIcon strokeWidth={2} className="size-4" />
-                </button>
 
                 {/* <main className="bg-background grow rounded-t-2xl p-4 shadow-[0px_-2px_8px_-8px_rgba(0,0,0,0.35)]">
                     <Select placeholder="Camera">
