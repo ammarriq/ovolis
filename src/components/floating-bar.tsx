@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react"
-
 import type { ScreenSource } from "~/types/screen-sources"
+import { useEffect, useRef, useState } from "react"
 
 interface FloatingBarProps {
     source: ScreenSource
@@ -9,12 +8,7 @@ interface FloatingBarProps {
     onSourceChange: (source: ScreenSource | null) => void
 }
 
-const FloatingBar = ({
-    source,
-    isVisible,
-    onClose,
-    onSourceChange,
-}: FloatingBarProps) => {
+const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBarProps) => {
     const [isRecording, setIsRecording] = useState(false)
     const [recordingTime, setRecordingTime] = useState(0)
     // Removed FFmpeg conversion state
@@ -83,32 +77,22 @@ const FloatingBar = ({
             // Open streaming write on main process to save chunks as they arrive
             filePathRef.current = recordingConfig.filePath as string
             try {
-                await window.electronAPI.openRecordingStream(
-                    recordingConfig.filePath
-                )
+                await window.electronAPI.openRecordingStream(recordingConfig.filePath)
                 streamingEnabledRef.current = true
                 writeQueueRef.current = Promise.resolve()
                 console.log("Streaming recording enabled (writing to .part)")
             } catch (e) {
                 streamingEnabledRef.current = false
-                console.warn(
-                    "Streaming not available, falling back to buffered save:",
-                    e
-                )
+                console.warn("Streaming not available, falling back to buffered save:", e)
             }
 
             // Start actual recording with fallback mechanism
             let stream: MediaStream
             try {
                 // Try primary capture method
-                stream = await navigator.mediaDevices.getUserMedia(
-                    recordingConfig.constraints
-                )
+                stream = await navigator.mediaDevices.getUserMedia(recordingConfig.constraints)
             } catch (primaryError) {
-                console.warn(
-                    "Primary capture method failed, trying fallback:",
-                    primaryError
-                )
+                console.warn("Primary capture method failed, trying fallback:", primaryError)
             }
             // Capture microphone audio separately
             let micStream: MediaStream | null = null
@@ -122,10 +106,7 @@ const FloatingBar = ({
                     video: false,
                 })
             } catch (micErr) {
-                console.warn(
-                    "Microphone capture failed; continuing without mic:",
-                    micErr
-                )
+                console.warn("Microphone capture failed; continuing without mic:", micErr)
             }
 
             // Mix system (desktop) audio with mic using Web Audio API
@@ -134,7 +115,8 @@ const FloatingBar = ({
                 const hasSystemAudio = stream.getAudioTracks().length > 0
                 const hasMicAudio = micStream?.getAudioTracks().length
                 if (hasSystemAudio || hasMicAudio) {
-                    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+                    const audioCtx = new (window.AudioContext ||
+                        (window as any).webkitAudioContext)()
                     audioCtxRef.current = audioCtx
                     const dest = audioCtx.createMediaStreamDestination()
                     audioDestRef.current = dest
@@ -154,7 +136,10 @@ const FloatingBar = ({
                     mixedAudioTrack = dest.stream.getAudioTracks()[0]
                 }
             } catch (mixErr) {
-                console.warn("Audio mixing failed; will fallback to available audio tracks:", mixErr)
+                console.warn(
+                    "Audio mixing failed; will fallback to available audio tracks:",
+                    mixErr,
+                )
             }
 
             // Build final combined stream: screen video + mixed audio (or fallback to system/mic audio)
@@ -163,10 +148,10 @@ const FloatingBar = ({
                 ...(mixedAudioTrack
                     ? [mixedAudioTrack]
                     : stream.getAudioTracks().length > 0
-                    ? [stream.getAudioTracks()[0]]
-                    : micStream?.getAudioTracks()?.length
-                    ? [micStream!.getAudioTracks()[0]]
-                    : []),
+                      ? [stream.getAudioTracks()[0]]
+                      : micStream?.getAudioTracks()?.length
+                        ? [micStream!.getAudioTracks()[0]]
+                        : []),
             ]
             const combinedStream = new MediaStream(combinedTracks)
 
@@ -181,18 +166,9 @@ const FloatingBar = ({
 
             // DIAGNOSTIC: Log codec support
             console.log("=== CODEC DIAGNOSTICS ===")
-            console.log(
-                "VP8 support:",
-                MediaRecorder.isTypeSupported("video/mp4;codecs=vp8")
-            )
-            console.log(
-                "H264 support:",
-                MediaRecorder.isTypeSupported("video/mp4;codecs=h264")
-            )
-            console.log(
-                "VP9 support:",
-                MediaRecorder.isTypeSupported("video/mp4;codecs=vp9")
-            )
+            console.log("VP8 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=vp8"))
+            console.log("H264 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=h264"))
+            console.log("VP9 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=vp9"))
 
             // Prefer VP9 > VP8 > H264-in-mp4 (if available)
             if (MediaRecorder.isTypeSupported("video/mp4;codecs=vp9")) {
@@ -208,9 +184,7 @@ const FloatingBar = ({
 
             // Dynamically scale bitrate based on captured resolution/FPS
             const videoTrack = stream.getVideoTracks()[0]
-            const settings = videoTrack?.getSettings
-                ? videoTrack.getSettings()
-                : {}
+            const settings = videoTrack?.getSettings ? videoTrack.getSettings() : {}
             const width = (settings as any).width ?? 1920
             const height = (settings as any).height ?? 1080
             const fps = (settings as any).frameRate ?? 30
@@ -245,16 +219,13 @@ const FloatingBar = ({
             mediaRecorder.ondataavailable = async (event) => {
                 try {
                     if (event.data && event.data.size > 0) {
-                        if (
-                            streamingEnabledRef.current &&
-                            filePathRef.current
-                        ) {
+                        if (streamingEnabledRef.current && filePathRef.current) {
                             const doWrite = async () => {
                                 const ab = await event.data.arrayBuffer()
                                 const uint8 = new Uint8Array(ab)
                                 await window.electronAPI.writeRecordingChunk(
                                     filePathRef.current!,
-                                    uint8
+                                    uint8,
                                 )
                             }
                             // Chain writes to keep order
@@ -279,9 +250,7 @@ const FloatingBar = ({
                 setRecordingTime(0)
 
                 if (streamRef.current) {
-                    streamRef.current
-                        .getTracks()
-                        .forEach((track) => track.stop())
+                    streamRef.current.getTracks().forEach((track) => track.stop())
                     streamRef.current = null
                 }
                 if (screenStreamRef.current) {
@@ -297,7 +266,9 @@ const FloatingBar = ({
                     audioDestRef.current = null
                 }
                 if (audioCtxRef.current) {
-                    try { await audioCtxRef.current.close() } catch {}
+                    try {
+                        await audioCtxRef.current.close()
+                    } catch {}
                     audioCtxRef.current = null
                 }
 
@@ -305,21 +276,15 @@ const FloatingBar = ({
                 try {
                     if (streamingEnabledRef.current && filePathRef.current) {
                         await writeQueueRef.current
-                        await window.electronAPI.closeRecordingStream(
-                            filePathRef.current
-                        )
-                        await window.electronAPI.deletePartialRecording(
-                            filePathRef.current
-                        )
+                        await window.electronAPI.closeRecordingStream(filePathRef.current)
+                        await window.electronAPI.deletePartialRecording(filePathRef.current)
                     }
                 } catch (cleanupErr) {
                     console.warn("Cleanup after error failed:", cleanupErr)
                 } finally {
                     streamingEnabledRef.current = false
                 }
-                alert(
-                    "❌ Recording error occurred. This may be due to capture issues."
-                )
+                alert("❌ Recording error occurred. This may be due to capture issues.")
             }
 
             mediaRecorder.onstop = async () => {
@@ -327,10 +292,9 @@ const FloatingBar = ({
                     if (streamingEnabledRef.current && filePathRef.current) {
                         // Ensure all pending writes flushed
                         await writeQueueRef.current
-                        const finalPath =
-                            await window.electronAPI.finalizeRecordingStream(
-                                filePathRef.current
-                            )
+                        const finalPath = await window.electronAPI.finalizeRecordingStream(
+                            filePathRef.current,
+                        )
                         alert(`✅ Recording saved: ${finalPath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(finalPath)
@@ -345,14 +309,12 @@ const FloatingBar = ({
                         const uint8 = new Uint8Array(arrayBuffer)
                         const msg = await window.electronAPI.saveRecording(
                             recordingConfig.filePath,
-                            uint8
+                            uint8,
                         )
                         console.log(msg)
                         alert(`✅ Recording saved: ${recordingConfig.filePath}`)
                         if (window.electronAPI.openFolder) {
-                            window.electronAPI.openFolder(
-                                recordingConfig.filePath
-                            )
+                            window.electronAPI.openFolder(recordingConfig.filePath)
                         }
                     }
                 } catch (err) {
@@ -373,17 +335,13 @@ const FloatingBar = ({
             console.log("MediaRecorder state:", mediaRecorder.state)
             console.log(
                 "Stream tracks:",
-                streamRef.current
-                    ?.getTracks()
-                    .map((track) => ({
-                        kind: track.kind,
-                        label: track.label,
-                        enabled: track.enabled,
-                        readyState: track.readyState,
-                        settings: track.getSettings
-                            ? track.getSettings()
-                            : "N/A",
-                    }))
+                streamRef.current?.getTracks().map((track) => ({
+                    kind: track.kind,
+                    label: track.label,
+                    enabled: track.enabled,
+                    readyState: track.readyState,
+                    settings: track.getSettings ? track.getSettings() : "N/A",
+                })),
             )
 
             mediaRecorder.start(500) // Larger timeslice to reduce cursor stuttering
@@ -392,23 +350,18 @@ const FloatingBar = ({
             setIsStartingRecording(false)
 
             console.log(`✅ Recording started for: ${source.name}`)
-            console.log(
-                "✅ OPTIMIZED: Using 500ms data collection interval for smooth cursor!"
-            )
+            console.log("✅ OPTIMIZED: Using 500ms data collection interval for smooth cursor!")
         } catch (error) {
             console.error("Error starting recording:", error)
             setIsStartingRecording(false)
             alert(
-                `❌ Failed to start recording: ${error instanceof Error ? error.message : String(error)}`
+                `❌ Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
             )
         }
     }
 
     const stopRecording = () => {
-        if (
-            mediaRecorderRef.current &&
-            mediaRecorderRef.current.state === "recording"
-        ) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             mediaRecorderRef.current.stop()
         }
         if (streamRef.current) {
@@ -446,20 +399,17 @@ const FloatingBar = ({
     return (
         <div className="z-50 flex flex-col gap-3">
             {/* Main floating bar */}
-            <div className="bg-black/80 backdrop-blur-sm rounded-full px-6 py-3 flex items-center gap-4 shadow-lg border border-white/20">
+            <div className="flex items-center gap-4 rounded-full border border-white/20 bg-black/80 px-6 py-3 shadow-lg backdrop-blur-sm">
                 {/* Source name */}
-                <div
-                    className="text-white text-sm font-medium"
-                    style={{ WebkitAppRegion: "drag" }}
-                >
+                <div className="text-sm font-medium text-white" style={{ WebkitAppRegion: "drag" }}>
                     {source.name}
                 </div>
 
                 {/* Recording indicator and timer */}
                 {isRecording && (
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-white font-mono text-sm">
+                        <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+                        <span className="font-mono text-sm text-white">
                             {formatTime(recordingTime)}
                         </span>
                     </div>
@@ -479,16 +429,14 @@ const FloatingBar = ({
                         disabled={isStartingRecording}
                         className={`${
                             isStartingRecording
-                                ? "bg-gray-500 cursor-not-allowed"
-                                : "bg-red-600 hover:bg-red-700 cursor-pointer"
-                        } text-white px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-2`}
+                                ? "cursor-not-allowed bg-gray-500"
+                                : "cursor-pointer bg-red-600 hover:bg-red-700"
+                        } flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition-colors duration-200`}
                     >
                         <div
-                            className={`w-3 h-3 ${isStartingRecording ? "bg-gray-300 animate-pulse" : "bg-white"} rounded-full`}
+                            className={`h-3 w-3 ${isStartingRecording ? "animate-pulse bg-gray-300" : "bg-white"} rounded-full`}
                         ></div>
-                        {isStartingRecording
-                            ? "Starting..."
-                            : "Start Recording"}
+                        {isStartingRecording ? "Starting..." : "Start Recording"}
                     </button>
                 ) : isRecording ? (
                     <button
@@ -496,16 +444,14 @@ const FloatingBar = ({
                             e.stopPropagation()
                             stopRecording()
                         }}
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center gap-2"
+                        className="flex cursor-pointer items-center gap-2 rounded-full bg-gray-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-700"
                         style={{ cursor: "pointer" }}
                     >
-                        <div className="w-3 h-3 bg-white"></div>
+                        <div className="h-3 w-3 bg-white"></div>
                         Stop Recording
                     </button>
                 ) : (
-                    <div className="text-white text-sm px-4 py-2">
-                        Processing...
-                    </div>
+                    <div className="px-4 py-2 text-sm text-white">Processing...</div>
                 )}
             </div>
         </div>

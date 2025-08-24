@@ -44,10 +44,7 @@ export default defineConfig([
                     ignoreRestSiblings: true,
                 },
             ],
-            "@typescript-eslint/no-empty-object-type": [
-                "error",
-                { allowInterfaces: "always" },
-            ],
+            "@typescript-eslint/no-empty-object-type": ["error", { allowInterfaces: "always" }],
             "@typescript-eslint/consistent-type-imports": "error",
             "react/prop-types": ["error", { ignore: ["className"] }],
 
@@ -59,12 +56,7 @@ export default defineConfig([
                     groups: [
                         ["^\\u0000"],
                         ["^.+\\u0000$"],
-                        [
-                            "^node:",
-                            "electron",
-                            "^react",
-                            "react-aria-components",
-                        ],
+                        ["^node:", "electron", "^react", "react-aria-components"],
                         ["^@?\\w"],
                         ["^~/lib", "^"],
                         ["^\\.\\.(?!/?$)", "^\\.\\./?$"],

@@ -1,12 +1,21 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
+import { CloseIcon } from "~/icons/close"
+import { WindowIcon } from "~/icons/window"
 import { useEffect, useState } from "react"
+import { VolumeIcon } from "~/icons/volume"
 import { createRoot } from "react-dom/client"
+import { FullScreenIcon } from "~/icons/full-screen"
+
+import { MicIcon } from "~/icons/mic"
+import { cn } from "~/utils/cn"
+import { SettingsIcon } from "~/icons/settings"
+import { CropScreenIcon } from "~/icons/crop-screen"
+import { CustomScreenIcon } from "~/icons/custom-screen"
+import { CameraIcon } from "~/icons/camera"
 
 import Header from "./-header"
 import { DragIcon } from "~/icons/drag"
-import { CloseIcon } from "~/icons/close"
-import { WindowIcon } from "~/icons/window"
 import AppIcon from "../assets/icons/icon.png"
 import {
     Button,
@@ -19,14 +28,6 @@ import {
     Select,
     SelectValue,
 } from "react-aria-components"
-import { FullScreenIcon } from "~/icons/full-screen"
-import { CameraIcon } from "~/icons/camera"
-import { MicIcon } from "~/icons/mic"
-import { VolumeIcon } from "~/icons/volume"
-import { cn } from "~/utils/cn"
-import { SettingsIcon } from "~/icons/settings"
-import { CropScreenIcon } from "~/icons/crop-screen"
-import { CustomScreenIcon } from "~/icons/custom-screen"
 
 const Recorder = () => {
     const [modal, setModal] = useState(false)

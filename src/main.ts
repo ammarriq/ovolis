@@ -1,21 +1,21 @@
-import type { ScreenSource } from "./types/screen-sources.js"
+import type { ScreenSource } from "./types/screen-sources"
 
-import path from "node:path"
+import path from "path"
 import { app, BrowserWindow, ipcMain, shell } from "electron"
 import started from "electron-squirrel-startup"
 
-import { createFloatingBar } from "./utils/floating-bar.js"
-import { saveRecording, startRecording } from "./utils/start-recording.js"
+import { fixMp4Metadata } from "./utils/ffmpeg-post"
+import { saveRecording, startRecording } from "./utils/start-recording"
 import {
     closeRecordingStream,
+    deletePartialRecording,
     finalizeRecordingStream,
     openRecordingStream,
     writeRecordingChunk,
-    deletePartialRecording,
-} from "./utils/recording-stream.js"
-import { fixMp4Metadata } from "./utils/ffmpeg-post.js"
-import { takeScreenshot } from "./utils/take-screenshots.js"
-import { focusWindow, resizeWindow } from "./utils/window-manager.js"
+} from "./utils/recording-stream"
+import { takeScreenshot } from "./utils/take-screenshots"
+import { focusWindow, resizeWindow } from "./utils/window-manager"
+import { createFloatingBar } from "./utils/floating-bar"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {

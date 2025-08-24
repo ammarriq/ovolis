@@ -1,10 +1,5 @@
 {
-    "include": [
-        "**/*.ts",
-        "**/*.tsx",
-        "global.d.ts",
-        "src/utils/window-manager.ts"
-    ],
+    "include": ["**/*.ts", "**/*.tsx", "global.d.ts", "src/utils/window-manager.ts"],
     "exclude": [
         "src/utils/ffmpeg-*.ts",
         "src/utils/file-processor.ts",
