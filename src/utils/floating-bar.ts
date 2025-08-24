@@ -4,10 +4,7 @@ import { BrowserWindow } from "electron"
 
 import path from "path"
 
-export function createFloatingBar(
-    _: Electron.IpcMainInvokeEvent,
-    source: ScreenSource
-) {
+export function createFloatingBar(_: Electron.IpcMainInvokeEvent, source: ScreenSource) {
     const floatingWindow = new BrowserWindow({
         width: 400,
         height: 80,

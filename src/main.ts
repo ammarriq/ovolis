@@ -1,11 +1,12 @@
 import type { ScreenSource } from "./types/screen-sources"
 
-import path from "path"
 import { app, BrowserWindow, ipcMain, shell } from "electron"
 import started from "electron-squirrel-startup"
 
+import path from "path"
+
 import { fixMp4Metadata } from "./utils/ffmpeg-post"
-import { saveRecording, startRecording } from "./utils/start-recording"
+import { createFloatingBar } from "./utils/floating-bar"
 import {
     closeRecordingStream,
     deletePartialRecording,
@@ -13,9 +14,9 @@ import {
     openRecordingStream,
     writeRecordingChunk,
 } from "./utils/recording-stream"
+import { saveRecording, startRecording } from "./utils/start-recording"
 import { takeScreenshot } from "./utils/take-screenshots"
 import { focusWindow, resizeWindow } from "./utils/window-manager"
-import { createFloatingBar } from "./utils/floating-bar"
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {

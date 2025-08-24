@@ -1,42 +1,24 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
-import { CloseIcon } from "~/icons/close"
-import { WindowIcon } from "~/icons/window"
 import { useEffect, useState } from "react"
-import { VolumeIcon } from "~/icons/volume"
 import { createRoot } from "react-dom/client"
-import { FullScreenIcon } from "~/icons/full-screen"
 
-import { MicIcon } from "~/icons/mic"
-import { cn } from "~/utils/cn"
-import { SettingsIcon } from "~/icons/settings"
-import { CropScreenIcon } from "~/icons/crop-screen"
+import { CloseIcon } from "~/icons/close"
 import { CustomScreenIcon } from "~/icons/custom-screen"
-import { CameraIcon } from "~/icons/camera"
+import { FullScreenIcon } from "~/icons/full-screen"
+import { SettingsIcon } from "~/icons/settings"
+import { WindowIcon } from "~/icons/window"
 
-import Header from "./-header"
-import { DragIcon } from "~/icons/drag"
 import AppIcon from "../assets/icons/icon.png"
-import {
-    Button,
-    ListBox,
-    ListBoxItem,
-    Menu,
-    MenuItem,
-    MenuTrigger,
-    Popover,
-    Select,
-    SelectValue,
-} from "react-aria-components"
 
 const Recorder = () => {
-    const [modal, setModal] = useState(false)
-    const [screenSources, setScreenSources] = useState<ScreenSource[]>([])
-    const [selectedSource, setSelectedSource] = useState<ScreenSource>(null)
+    const [_modal, setModal] = useState(false)
+    const [_screenSources, setScreenSources] = useState<ScreenSource[]>([])
+    const [_selectedSource, setSelectedSource] = useState<ScreenSource>(null)
 
-    const [isCameraOn, setIsCameraOn] = useState(true)
-    const [isMicOn, setIsMicOn] = useState(true)
-    const [isVolumeOn, setIsVolumeOn] = useState(true)
+    const [_isCameraOn, _setIsCameraOn] = useState(true)
+    const [_isMicOn, _setIsMicOn] = useState(true)
+    const [_isVolumeOn, _setIsVolumeOn] = useState(true)
 
     useEffect(() => {
         // const loadScreenSources = () => {
@@ -58,7 +40,7 @@ const Recorder = () => {
 
     // Recording timer effect
 
-    const getScreenSources = async () => {
+    const _getScreenSources = async () => {
         setModal(true)
 
         if (window.electronAPI) {
@@ -74,7 +56,7 @@ const Recorder = () => {
         }
     }
 
-    const selectSource = async (source: ScreenSource) => {
+    const _selectSource = async (source: ScreenSource) => {
         setSelectedSource(source)
         setModal(false)
 
@@ -86,7 +68,7 @@ const Recorder = () => {
         }
     }
 
-    const getMediaDevices = async () => {
+    const _getMediaDevices = async () => {
         try {
             const devices = await navigator.mediaDevices.enumerateDevices()
             console.log(devices)

@@ -18,7 +18,7 @@ const nativeAddon = require(addonPath)
  */
 export async function resizeWindow(
     _event: Electron.IpcMainInvokeEvent,
-    options: { appName: string; width: number; height: number }
+    options: { appName: string; width: number; height: number },
 ): Promise<string> {
     const { appName, width, height } = options
 
@@ -36,7 +36,7 @@ export async function resizeWindow(
  */
 export async function focusWindow(
     _event: Electron.IpcMainInvokeEvent,
-    windowTitle: string
+    windowTitle: string,
 ): Promise<string> {
     if (nativeAddon && nativeAddon.focusWindow) {
         const result = nativeAddon.focusWindow(windowTitle)

@@ -2,12 +2,10 @@ import { app, desktopCapturer } from "electron"
 
 import { writeFile } from "fs/promises"
 import path from "path"
+
 import { fixMp4Metadata } from "./ffmpeg-post.js"
 
-export async function startRecording(
-    sourceId: string,
-    sourceName: string
-): Promise<string> {
+export async function startRecording(sourceId: string, sourceName: string): Promise<string> {
     try {
         // Get high-resolution screen source with maximum quality
         const sources = await desktopCapturer.getSources({
@@ -27,10 +25,7 @@ export async function startRecording(
         const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.mp4`
 
         // Get the user's desktop path for saving recordings
-        const desktopPath = path.join(
-            app.getPath("desktop"),
-            "Recrod Recordings"
-        )
+        const desktopPath = path.join(app.getPath("desktop"), "Recrod Recordings")
         const filePath = path.join(desktopPath, filename)
 
         // Return recording configuration that will be used by the renderer process
@@ -72,9 +67,7 @@ export async function startRecording(
 
         console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
         console.log("Recording constraints:", recordingConfig.constraints)
-        console.log(
-            "✅ Targeting up to 4K@60 if available; will fall back gracefully."
-        )
+        console.log("✅ Targeting up to 4K@60 if available; will fall back gracefully.")
         console.log("Source info:", {
             id: targetSource.id,
             name: targetSource.name,
@@ -85,21 +78,16 @@ export async function startRecording(
     } catch (error) {
         console.error("Error starting high-res recording:", error)
         throw new Error(
-            `Failed to start recording: ${error instanceof Error ? error.message : String(error)}`
+            `Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
         )
     }
 }
 
-export async function saveRecording(
-    filePath: string,
-    buffer: Buffer
-): Promise<string> {
+export async function saveRecording(filePath: string, buffer: Buffer): Promise<string> {
     try {
         // Ensure the directory exists
         const dir = path.dirname(filePath)
-        await import("fs").then((fs) =>
-            fs.promises.mkdir(dir, { recursive: true })
-        )
+        await import("fs").then((fs) => fs.promises.mkdir(dir, { recursive: true }))
 
         // Save the recording file directly (mp4)
         await writeFile(filePath, buffer)
@@ -113,21 +101,19 @@ export async function saveRecording(
     } catch (error) {
         console.error("Error saving recording:", error)
         throw new Error(
-            `Failed to save recording: ${error instanceof Error ? error.message : String(error)}`
+            `Failed to save recording: ${error instanceof Error ? error.message : String(error)}`,
         )
     }
 }
 
 export async function saveRecordingWithoutConversion(
     filePath: string,
-    buffer: Buffer
+    buffer: Buffer,
 ): Promise<string> {
     try {
         // Ensure the directory exists
         const dir = path.dirname(filePath)
-        await import("fs").then((fs) =>
-            fs.promises.mkdir(dir, { recursive: true })
-        )
+        await import("fs").then((fs) => fs.promises.mkdir(dir, { recursive: true }))
 
         // Save the recording file directly (fallback method)
         await writeFile(filePath, buffer)
@@ -136,7 +122,7 @@ export async function saveRecordingWithoutConversion(
     } catch (error) {
         console.error("Error saving recording:", error)
         throw new Error(
-            `Failed to save recording: ${error instanceof Error ? error.message : String(error)}`
+            `Failed to save recording: ${error instanceof Error ? error.message : String(error)}`,
         )
     }
 }

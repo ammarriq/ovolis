@@ -1,4 +1,5 @@
 import type { ScreenSource } from "~/types/screen-sources"
+
 import { useEffect, useRef, useState } from "react"
 
 interface FloatingBarProps {
@@ -115,8 +116,8 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 const hasSystemAudio = stream.getAudioTracks().length > 0
                 const hasMicAudio = micStream?.getAudioTracks().length
                 if (hasSystemAudio || hasMicAudio) {
-                    const audioCtx = new (window.AudioContext ||
-                        (window as any).webkitAudioContext)()
+                    // const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+                    const audioCtx = new window.AudioContext()
                     audioCtxRef.current = audioCtx
                     const dest = audioCtx.createMediaStreamDestination()
                     audioDestRef.current = dest
@@ -185,9 +186,9 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             // Dynamically scale bitrate based on captured resolution/FPS
             const videoTrack = stream.getVideoTracks()[0]
             const settings = videoTrack?.getSettings ? videoTrack.getSettings() : {}
-            const width = (settings as any).width ?? 1920
-            const height = (settings as any).height ?? 1080
-            const fps = (settings as any).frameRate ?? 30
+            const width = (settings as { width: number }).width ?? 1920
+            const height = (settings as { height: number }).height ?? 1080
+            const fps = (settings as { frameRate: number }).frameRate ?? 30
 
             // Heuristic: bits-per-pixel-per-frame ~0.1 for high quality desktop capture
             const targetBpppf = 0.1
