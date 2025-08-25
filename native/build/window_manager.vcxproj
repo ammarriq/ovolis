@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{8759FDD3-0A0F-59E1-E52C-72281A0AD4DF}</ProjectGuid>
+    <ProjectGuid>{F931A810-DBD4-5185-8E3D-A0ABAA78B6F7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>window_manager</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
@@ -48,7 +48,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\recrod\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\cursorx\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus -std:c++20 /Zm2000 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -84,13 +84,13 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\recrod\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\cursorx\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=window_manager;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;_FILE_OFFSET_BITS=64;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;NAPI_DISABLE_CPP_EXCEPTIONS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\recrod\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\cursorx\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus -std:c++20 /Zm2000 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
@@ -129,7 +129,7 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\recrod\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\include\node;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\src;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\config;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\openssl\openssl\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\uv\include;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\zlib;C:\Users\HP\AppData\Local\node-gyp\Cache\24.3.0\deps\v8\include;D:\vibecoding\cursorx\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=window_manager;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;_FILE_OFFSET_BITS=64;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;NAPI_DISABLE_CPP_EXCEPTIONS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -140,11 +140,11 @@
     <ClCompile Include="..\window_manager.cpp">
       <ObjectFileName>$(IntDir)\window_manager.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\66c590564a9de4610b8e4781bb96211cbc1328e48e3e1e608eae185d3f078b0c\198b7864b34-1b00\node_modules\.pnpm\node-gyp@11.3.0\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\node_modules\node-addon-api\nothing.vcxproj">
-      <Project>{E6FCA188-AA96-BCC1-6435-F986050F4FDC}</Project>
+      <Project>{28C84EC4-76A6-3141-C88F-4ED9A84479DE}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

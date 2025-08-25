@@ -12,23 +12,25 @@ import { WindowIcon } from "~/icons/window"
 import AppIcon from "../assets/icons/icon.png"
 
 const Recorder = () => {
-    const [_modal, setModal] = useState(false)
-    const [_screenSources, setScreenSources] = useState<ScreenSource[]>([])
-    const [_selectedSource, setSelectedSource] = useState<ScreenSource>(null)
+    const [modal, setModal] = useState(false)
+    const [screenSources, setScreenSources] = useState<ScreenSource[]>([])
+    const [selectedSource, setSelectedSource] = useState<ScreenSource>(null)
 
     const [_isCameraOn, _setIsCameraOn] = useState(true)
     const [_isMicOn, _setIsMicOn] = useState(true)
     const [_isVolumeOn, _setIsVolumeOn] = useState(true)
 
-    useEffect(() => {
-        // const loadScreenSources = () => {
-        //     window.electronAPI
-        //         .getScreenSources()
-        //         .then((sources) => setScreenSources(sources))
-        //         .catch((error) => console.error(error))
-        // }
+    // Layout handled purely via CSS grid (no absolute positioning)
 
-        // loadScreenSources()
+    useEffect(() => {
+        const loadScreenSources = () => {
+            window.electronAPI
+                .getScreenSources()
+                .then((sources) => setScreenSources(sources))
+                .catch((error) => console.error(error))
+        }
+
+        loadScreenSources()
 
         window.onfocus = () => {
             window.electronAPI
@@ -56,7 +58,7 @@ const Recorder = () => {
         }
     }
 
-    const _selectSource = async (source: ScreenSource) => {
+    const selectSource = async (source: ScreenSource) => {
         setSelectedSource(source)
         setModal(false)
 
@@ -77,10 +79,54 @@ const Recorder = () => {
         }
     }
 
+    const resizeWindow = (width: number, height: number) => {
+        window.electronAPI.setWindowSize(width, height)
+    }
+
+    const openScreenSelection = () => {
+        setModal(true)
+        resizeWindow(420, 400)
+    }
+
     return (
-        <div className="flex flex-col p-2">
-            <div
-                className="bg-background flex items-center gap-4 overflow-y-auto rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]"
+        <main className="flex h-screen flex-col gap-4 p-2">
+            <div className="min-h-0 flex-1">
+                {modal && (
+                    <section className="bg-background grid h-full min-h-0 w-full grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-2xl border p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
+                        <div className="grid h-full min-h-0 auto-rows-max grid-cols-2 gap-2 overflow-y-auto pr-2">
+                            {screenSources.map((source) => (
+                                <button
+                                    key={source.id}
+                                    className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
+                                    onClick={() => selectSource(source)}
+                                >
+                                    <div className="h-24 w-full shrink-0">
+                                        <img
+                                            src={source.thumbnail}
+                                            className="size-full rounded-t-md object-cover"
+                                            alt={source.name}
+                                        />
+                                    </div>
+                                    <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex justify-end">
+                            <button
+                                className="rounded-md border px-3 py-1 text-sm"
+                                onClick={() => {
+                                    setModal(false)
+                                    window.electronAPI.setDefaultSize()
+                                }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </section>
+                )}
+            </div>
+            <section
+                className="bg-background relative z-20 mx-auto flex max-w-max items-center gap-4 rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]"
                 style={{ WebkitAppRegion: "drag" }}
             >
                 <div
@@ -106,6 +152,7 @@ const Recorder = () => {
                     <button
                         className="relative grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
+                        onClick={openScreenSelection}
                     >
                         <WindowIcon className="size-4.5" />
                     </button>
@@ -218,12 +265,12 @@ const Recorder = () => {
                         )}
                     </div>
                 )} */}
-            </div>
+            </section>
 
             {/* <div className="bg-background mt-4 w-80 rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
                 <p>Recording in progress...</p>
             </div> */}
-        </div>
+        </main>
     )
 }
 

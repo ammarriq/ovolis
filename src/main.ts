@@ -76,6 +76,11 @@ const createWindow = () => {
         if (mainWindow) mainWindow.setSize(width, height)
     })
 
+    ipcMain.handle("set-default-size", () => {
+        console.log("Setting default size")
+        if (mainWindow) mainWindow.setSize(306, 99)
+    })
+
     ipcMain.handle("window-close", () => {
         if (mainWindow) mainWindow.close()
     })
@@ -170,7 +175,9 @@ const createWindow = () => {
         mainWindow.loadFile(path.join(__dirname, filePath))
     }
 
-    mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools({
+        mode: "undocked",
+    })
 }
 
 // This method will be called when Electron has finished

@@ -1,7 +1,7 @@
 {
     "$schema": "https://json.schemastore.org/package",
-    "name": "recrod",
-    "productName": "recrod",
+    "name": "cursorx",
+    "productName": "CursorX",
     "version": "1.0.0",
     "description": "My Electron application description",
     "main": ".vite/build/main.js",

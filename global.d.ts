@@ -5,6 +5,7 @@ declare global {
     interface Window {
         electronAPI: {
             setWindowSize: (width: number, height: number) => Promise<void>
+            setDefaultSize: () => Promise<void>
             minimizeWindow: () => Promise<void>
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>
