@@ -75,17 +75,11 @@ const createWindow = () => {
     ipcMain.handle("set-window-size", (_, width?: number, height?: number) => {
         if (!mainWindow) return
 
-        if (width && height) {
-            mainWindow.setSize(width, height)
-            return
-        }
+        const newWidth = width ?? 280
+        const newHeight = height ?? 354
 
-        // const wasResizable = mainWindow.isResizable()
-        // if (!wasResizable) {
-        //     mainWindow.setResizable(true)
-        mainWindow.setSize(280, 354)
-        //     mainWindow.setResizable(false)
-        // }
+        mainWindow.setMinimumSize(newWidth, newHeight)
+        mainWindow.setSize(newWidth, newHeight)
     })
 
     ipcMain.handle("window-close", () => {

@@ -4,8 +4,7 @@ import type { ScreenSource } from "~/types/screen-sources"
 declare global {
     interface Window {
         electronAPI: {
-            setWindowSize: (width: number, height: number) => Promise<void>
-            setDefaultSize: () => Promise<void>
+            setWindowSize: (width?: number, height?: number) => Promise<void>
             minimizeWindow: () => Promise<void>
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>

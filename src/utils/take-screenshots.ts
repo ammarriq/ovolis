@@ -4,7 +4,7 @@ export async function takeScreenshot() {
     try {
         const sources = await desktopCapturer.getSources({
             types: ["window", "screen"],
-            thumbnailSize: { width: 320, height: 320 },
+            thumbnailSize: { width: 600, height: 600 },
             fetchWindowIcons: true,
         })
 

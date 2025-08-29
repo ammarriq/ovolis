@@ -2,28 +2,40 @@ import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
-import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from "react-aria-components"
+import {
+    Button,
+    ListBox,
+    ListBoxItem,
+    Menu,
+    MenuItem,
+    MenuTrigger,
+    Popover,
+    Select,
+    SelectValue,
+    SubmenuTrigger,
+} from "react-aria-components"
 
+import { ArrowLeftIcon } from "~/icons/arrow-left"
 import { CameraIcon } from "~/icons/camera"
 import { CloseIcon } from "~/icons/close"
-import { CustomScreenIcon } from "~/icons/custom-screen"
-import { FullScreenIcon } from "~/icons/full-screen"
 import { MicIcon } from "~/icons/mic"
 import { ScreenIcon } from "~/icons/screen"
-import { SettingsIcon } from "~/icons/settings"
 import { VolumeIcon } from "~/icons/volume"
-import { WindowIcon } from "~/icons/window"
 
 import AppIcon from "../assets/icons/icon.png"
 
+import { demoSource } from "./emulated-data"
+
 const Recorder = () => {
-    const [modal, setModal] = useState(false)
+    const [modal, setModal] = useState(true)
     const [screenSources, setScreenSources] = useState<ScreenSource[]>([])
-    const [selectedSource, setSelectedSource] = useState<ScreenSource>(null)
+    const [selectedSource, setSelectedSource] = useState<ScreenSource>(demoSource)
 
     const [_isCameraOn, _setIsCameraOn] = useState(true)
     const [_isMicOn, _setIsMicOn] = useState(true)
     const [_isVolumeOn, _setIsVolumeOn] = useState(true)
+
+    console.log(selectedSource)
 
     // Layout handled purely via CSS grid (no absolute positioning)
 
@@ -65,14 +77,14 @@ const Recorder = () => {
 
     const selectSource = async (source: ScreenSource) => {
         setSelectedSource(source)
-        setModal(false)
+        // setModal(false)
 
-        try {
-            await window.electronAPI.createFloatingBar({ ...source })
-        } catch (error) {
-            console.error("Failed to create floating window:", error)
-            alert("Failed to create floating window")
-        }
+        // try {
+        //     await window.electronAPI.createFloatingBar({ ...source })
+        // } catch (error) {
+        //     console.error("Failed to create floating window:", error)
+        //     alert("Failed to create floating window")
+        // }
     }
 
     const _getMediaDevices = async () => {
@@ -90,7 +102,7 @@ const Recorder = () => {
             window.electronAPI.setWindowSize()
         } else {
             setModal(true)
-            window.electronAPI.setWindowSize(420 + 336, 280)
+            window.electronAPI.setWindowSize(420 + 280)
         }
     }
 
@@ -171,37 +183,26 @@ const Recorder = () => {
                         Start Recording
                     </Button>
                 </aside>
-
-                {/* <section className="bg-background size-full overflow-hidden rounded-2xl border p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
-                    <div className="grid h-full auto-rows-max grid-cols-2 gap-2 overflow-y-auto pr-2">
-                        {screenSources.map((source) => (
-                            <button
-                                key={source.id}
-                                className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
-                                onClick={() => selectSource(source)}
-                            >
-                                <div className="h-24 w-full shrink-0">
-                                    <img
-                                        src={source.thumbnail}
-                                        className="size-full rounded-t-md object-cover"
-                                        alt={source.name}
-                                    />
-                                </div>
-                                <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
-                            </button>
-                        ))}
-                    </div>
-                </section> */}
             </section>
 
             {modal ? (
                 <section className="bg-background grid grid-rows-[auto_minmax(0,1fr)] overflow-x-hidden rounded-2xl shadow-[0px_0px_12px_-5px_rgba(0,0,0,0.35)]">
                     <header
                         style={{ WebkitAppRegion: "drag" }}
-                        className="bg-background mb-2.5 flex w-full items-center justify-end gap-4 px-4 pt-2"
+                        className="bg-background mb-2.5 flex w-full items-center gap-4 px-4 pt-2"
                     >
+                        {selectedSource ? (
+                            <button
+                                className="relative -mr-2 grid size-7 shrink-0 place-items-center rounded-full"
+                                style={{ WebkitAppRegion: "no-drag" }}
+                                onClick={() => setSelectedSource(null)}
+                            >
+                                <ArrowLeftIcon strokeWidth={2} className="size-4" />
+                            </button>
+                        ) : null}
+
                         <button
-                            className="relative -mr-2 grid size-7 shrink-0 place-items-center rounded-full"
+                            className="relative -mr-2 ml-auto grid size-7 shrink-0 place-items-center rounded-full"
                             style={{ WebkitAppRegion: "no-drag" }}
                             onClick={toggleScreenSelection}
                         >
@@ -209,24 +210,78 @@ const Recorder = () => {
                         </button>
                     </header>
 
-                    <div className="grid h-full auto-rows-max grid-cols-2 gap-2 overflow-y-auto px-4 pb-4">
-                        {screenSources.map((source) => (
-                            <button
-                                key={source.id}
-                                className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
-                                onClick={() => selectSource(source)}
+                    <aside className="grid overflow-y-auto px-4 pb-4">
+                        {selectedSource ? (
+                            <div
+                                className="hover:bg-accent bg-accent/10 ring-border relative grid w-full gap-2 rounded-md border"
+                                // onClick={() => selectSource(source)}
                             >
-                                <div className="h-24 w-full shrink-0">
+                                <MenuTrigger>
+                                    <Button className="absolute top-2 left-2 z-10 flex max-w-max items-center gap-2 rounded-md border bg-[#F3F4F6] px-3 py-2 text-left text-sm shadow-[0px_0px_12px_-5px_rgba(0,0,0,0.35)]">
+                                        Resize
+                                    </Button>
+                                    <Popover>
+                                        <Menu className="bg-background w-40 rounded-md p-1 shadow-[0px_0px_12px_-5px_rgba(0,0,0,0.35)] outline-none">
+                                            <SubmenuTrigger>
+                                                <MenuItem className="rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6] data-[open=true]:bg-[#F3F5F6]">
+                                                    16:9
+                                                </MenuItem>
+                                                <Popover className="outline-none">
+                                                    <Menu className="bg-background w-40 rounded-md p-1 shadow-[0px_0px_12px_-5px_rgba(0,0,0,0.35)] outline-none">
+                                                        <MenuItem className="data-[focused=true]:text-accent-foreground rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6]">
+                                                            1920x1080
+                                                        </MenuItem>
+
+                                                        <MenuItem className="data-[focused=true]:text-accent-foreground rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6]">
+                                                            1280x768
+                                                        </MenuItem>
+                                                    </Menu>
+                                                </Popover>
+                                            </SubmenuTrigger>
+                                            <MenuItem className="data-[focused=true]:text-accent-foreground rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6]">
+                                                16:10
+                                            </MenuItem>
+                                            <MenuItem className="data-[focused=true]:text-accent-foreground rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6]">
+                                                4:3
+                                            </MenuItem>
+                                            <MenuItem className="data-[focused=true]:text-accent-foreground rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6]">
+                                                1:1
+                                            </MenuItem>
+                                            <MenuItem className="data-[focused=true]:text-accent-foreground rounded px-2 py-1 text-sm outline-none data-[focused=true]:bg-[#F3F5F6]">
+                                                Custom
+                                            </MenuItem>
+                                        </Menu>
+                                    </Popover>
+                                </MenuTrigger>
+                                <div className="relative size-full overflow-hidden">
                                     <img
-                                        src={source.thumbnail}
-                                        className="size-full rounded-t-md object-cover"
-                                        alt={source.name}
+                                        src={selectedSource.thumbnail}
+                                        className="absolute size-full rounded-md object-cover"
+                                        alt={selectedSource.name}
                                     />
                                 </div>
-                                <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
-                            </button>
-                        ))}
-                    </div>
+                            </div>
+                        ) : (
+                            <div className="grid h-full auto-rows-max grid-cols-2 gap-2">
+                                {screenSources.map((source) => (
+                                    <button
+                                        key={source.id}
+                                        className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
+                                        onClick={() => selectSource(source)}
+                                    >
+                                        <div className="h-24 w-full shrink-0">
+                                            <img
+                                                src={source.thumbnail}
+                                                className="size-full rounded-t-md object-cover"
+                                                alt={source.name}
+                                            />
+                                        </div>
+                                        <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </aside>
                 </section>
             ) : null}
         </main>
