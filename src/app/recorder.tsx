@@ -2,11 +2,16 @@ import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
+import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from "react-aria-components"
 
+import { CameraIcon } from "~/icons/camera"
 import { CloseIcon } from "~/icons/close"
 import { CustomScreenIcon } from "~/icons/custom-screen"
 import { FullScreenIcon } from "~/icons/full-screen"
+import { MicIcon } from "~/icons/mic"
+import { ScreenIcon } from "~/icons/screen"
 import { SettingsIcon } from "~/icons/settings"
+import { VolumeIcon } from "~/icons/volume"
 import { WindowIcon } from "~/icons/window"
 
 import AppIcon from "../assets/icons/icon.png"
@@ -79,197 +84,151 @@ const Recorder = () => {
         }
     }
 
-    const resizeWindow = (width: number, height: number) => {
-        window.electronAPI.setWindowSize(width, height)
-    }
-
-    const openScreenSelection = () => {
-        setModal(true)
-        resizeWindow(420, 400)
+    const toggleScreenSelection = () => {
+        if (modal) {
+            setModal(false)
+            window.electronAPI.setDefaultSize()
+        } else {
+            setModal(true)
+            window.electronAPI.setWindowSize(420 + 336, 280)
+        }
     }
 
     return (
-        <main className="flex h-screen flex-col gap-4 p-2">
-            <div className="min-h-0 flex-1">
-                {modal && (
-                    <section className="bg-background grid h-full min-h-0 w-full grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-2xl border p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
-                        <div className="grid h-full min-h-0 auto-rows-max grid-cols-2 gap-2 overflow-y-auto pr-2">
-                            {screenSources.map((source) => (
-                                <button
-                                    key={source.id}
-                                    className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
-                                    onClick={() => selectSource(source)}
-                                >
-                                    <div className="h-24 w-full shrink-0">
-                                        <img
-                                            src={source.thumbnail}
-                                            className="size-full rounded-t-md object-cover"
-                                            alt={source.name}
-                                        />
-                                    </div>
-                                    <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex justify-end">
-                            <button
-                                className="rounded-md border px-3 py-1 text-sm"
-                                onClick={() => {
-                                    setModal(false)
-                                    window.electronAPI.setDefaultSize()
-                                }}
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </section>
-                )}
-            </div>
-            <section
-                className="bg-background relative z-20 mx-auto flex max-w-max items-center gap-4 rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]"
-                style={{ WebkitAppRegion: "drag" }}
-            >
-                <div
-                    className="size-7 shrink-0"
-                    style={{ backgroundImage: `url(${AppIcon})`, backgroundSize: "cover" }}
-                />
+        <main className="grid h-screen grid-cols-[266px_400px] gap-4 overflow-hidden p-2">
+            <section className="bg-background flex flex-col overflow-x-hidden rounded-2xl shadow-[0px_0px_12px_-5px_rgba(0,0,0,0.35)]">
+                <header
+                    style={{ WebkitAppRegion: "drag" }}
+                    className="bg-background mb-2.5 flex w-full items-center justify-between gap-4 px-4 pt-2"
+                >
+                    <div
+                        className="size-5 shrink-0"
+                        style={{ backgroundImage: `url(${AppIcon})`, backgroundSize: "cover" }}
+                    />
 
-                <div className="h-6 border-r"></div>
-
-                <div className="flex gap-2">
                     <button
-                        className="bg-primary text-primary-foreground relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                    >
-                        <FullScreenIcon className="size-4.5" />
-                    </button>
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                    >
-                        <CustomScreenIcon className="size-4.5" />
-                    </button>
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={openScreenSelection}
-                    >
-                        <WindowIcon className="size-4.5" />
-                    </button>
-                </div>
-
-                {/* <div className="h-6 border-r"></div>
-
-                <div className="flex gap-2">
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={() => setIsCameraOn(!isCameraOn)}
-                    >
-                        <CameraIcon className="size-4.5" />
-                        {!isCameraOn ? (
-                            <div className="border-foreground absolute top-1/2 left-1/2 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
-                        ) : null}
-                    </button>
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={() => setIsMicOn(!isMicOn)}
-                    >
-                        <MicIcon className="size-4.5" />
-                        {!isMicOn ? (
-                            <div className="border-foreground absolute top-1/2 left-1/2 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
-                        ) : null}
-                    </button>
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={() => setIsVolumeOn(!isVolumeOn)}
-                    >
-                        <VolumeIcon className="size-4.5" />
-                        {!isVolumeOn ? (
-                            <div className="border-foreground absolute top-1/2 left-1/2 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b-2"></div>
-                        ) : null}
-                    </button>
-                </div> */}
-
-                <div className="h-6 border-r"></div>
-
-                <div className="flex gap-2">
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
-                        style={{ WebkitAppRegion: "no-drag" }}
-                    >
-                        <SettingsIcon strokeWidth={2} className="size-4.5" />
-                    </button>
-                    <button
-                        className="relative grid size-7 shrink-0 place-items-center rounded-full"
+                        className="relative -mr-2 grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
                         onClick={() => window.electronAPI?.closeWindow()}
                     >
-                        <CloseIcon strokeWidth={2} className="size-4.5" />
+                        <CloseIcon strokeWidth={2} className="size-4" />
                     </button>
-                </div>
+                </header>
 
-                {/* <main className="bg-background grow rounded-t-2xl p-4 shadow-[0px_-2px_8px_-8px_rgba(0,0,0,0.35)]">
-                    <Select placeholder="Camera">
-                        <Button className="bg-accent w-full rounded-md border px-2 py-1 text-left">
-                            <SelectValue />
+                <aside className="bg-background grow px-4 pb-4">
+                    <fieldset className="space-y-2">
+                        <h3 className="mb-2 text-xs font-bold">Record Option</h3>
+
+                        <Button
+                            className="flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm"
+                            onPress={toggleScreenSelection}
+                        >
+                            <ScreenIcon className="text-primary size-4.5" />
+                            <p>Screen</p>
                         </Button>
-                        <Popover>
-                            <ListBox>
-                                <ListBoxItem>No Camera</ListBoxItem>
-                                <ListBoxItem>Microphone</ListBoxItem>
-                            </ListBox>
-                        </Popover>
-                    </Select>
-                </main> */}
+                    </fieldset>
 
-                {/* {modal ? (
-                    <div className="flex gap-4 justify-center flex-wrap">
+                    <fieldset className="mt-4 space-y-2">
+                        <h3 className="mb-2 text-xs font-bold">Record Settings</h3>
+                        <Select placeholder="Camera">
+                            <Button className="flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm">
+                                <CameraIcon className="text-primary size-4.5" />
+                                <SelectValue />
+                            </Button>
+                            <Popover>
+                                <ListBox>
+                                    <ListBoxItem>No Camera</ListBoxItem>
+                                    <ListBoxItem>Microphone</ListBoxItem>
+                                </ListBox>
+                            </Popover>
+                        </Select>
+                        <Select placeholder="Micphone">
+                            <Button className="flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm">
+                                <MicIcon className="text-primary size-4.5" />
+                                <SelectValue />
+                            </Button>
+                            <Popover>
+                                <ListBox>
+                                    <ListBoxItem>No Camera</ListBoxItem>
+                                    <ListBoxItem>Microphone</ListBoxItem>
+                                </ListBox>
+                            </Popover>
+                        </Select>
+                        <Select placeholder="System Sound">
+                            <Button className="flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm">
+                                <VolumeIcon className="text-primary size-4.5" />
+                                <SelectValue />
+                            </Button>
+                            <Popover>
+                                <ListBox>
+                                    <ListBoxItem>No Camera</ListBoxItem>
+                                    <ListBoxItem>Microphone</ListBoxItem>
+                                </ListBox>
+                            </Popover>
+                        </Select>
+                    </fieldset>
+                    <Button className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm">
+                        Start Recording
+                    </Button>
+                </aside>
+
+                {/* <section className="bg-background size-full overflow-hidden rounded-2xl border p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
+                    <div className="grid h-full auto-rows-max grid-cols-2 gap-2 overflow-y-auto pr-2">
                         {screenSources.map((source) => (
                             <button
                                 key={source.id}
-                                className="w-80 overflow-hidden gap-4 justify-between border flex flex-col hover:bg-accent p-2 rounded-md"
+                                className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
                                 onClick={() => selectSource(source)}
                             >
-                                <img
-                                    src={source.thumbnail}
-                                    className="rounded-sm"
-                                    alt={source.name}
-                                />
-                                <p className="truncate text-sm">
-                                    {source.name}
-                                </p>
+                                <div className="h-24 w-full shrink-0">
+                                    <img
+                                        src={source.thumbnail}
+                                        className="size-full rounded-t-md object-cover"
+                                        alt={source.name}
+                                    />
+                                </div>
+                                <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
                             </button>
                         ))}
-                        <button onClick={() => setModal(false)}>Close</button>
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center p-4 grow justify-center overflow-y-auto gap-4">
-                        <button
-                            onClick={() => getScreenSources()}
-                            className="cursor-pointer size-24 rounded-full bg-primary grid place-items-center text-foreground-primary font-bold"
-                        >
-                            Record
-                        </button>
-                        {selectedSource && (
-                            <div className="text-center mt-4">
-                                <p className="text-sm text-gray-600">
-                                    Recording controls opened in floating window
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                    Selected: {selectedSource.name}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )} */}
+                </section> */}
             </section>
 
-            {/* <div className="bg-background mt-4 w-80 rounded-2xl p-4 shadow-[0px_0px_8px_-3px_rgba(0,0,0,0.35)]">
-                <p>Recording in progress...</p>
-            </div> */}
+            {modal ? (
+                <section className="bg-background grid grid-rows-[auto_minmax(0,1fr)] overflow-x-hidden rounded-2xl shadow-[0px_0px_12px_-5px_rgba(0,0,0,0.35)]">
+                    <header
+                        style={{ WebkitAppRegion: "drag" }}
+                        className="bg-background mb-2.5 flex w-full items-center justify-end gap-4 px-4 pt-2"
+                    >
+                        <button
+                            className="relative -mr-2 grid size-7 shrink-0 place-items-center rounded-full"
+                            style={{ WebkitAppRegion: "no-drag" }}
+                            onClick={toggleScreenSelection}
+                        >
+                            <CloseIcon strokeWidth={2} className="size-4" />
+                        </button>
+                    </header>
+
+                    <div className="grid h-full auto-rows-max grid-cols-2 gap-2 overflow-y-auto px-4 pb-4">
+                        {screenSources.map((source) => (
+                            <button
+                                key={source.id}
+                                className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
+                                onClick={() => selectSource(source)}
+                            >
+                                <div className="h-24 w-full shrink-0">
+                                    <img
+                                        src={source.thumbnail}
+                                        className="size-full rounded-t-md object-cover"
+                                        alt={source.name}
+                                    />
+                                </div>
+                                <p className="truncate px-2 pb-2 text-sm">{source.name}</p>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+            ) : null}
         </main>
     )
 }
