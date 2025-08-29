@@ -87,7 +87,7 @@ const Recorder = () => {
     const toggleScreenSelection = () => {
         if (modal) {
             setModal(false)
-            window.electronAPI.setDefaultSize()
+            window.electronAPI.setWindowSize()
         } else {
             setModal(true)
             window.electronAPI.setWindowSize(420 + 336, 280)

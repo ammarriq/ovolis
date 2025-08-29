@@ -72,13 +72,20 @@ const createWindow = () => {
     mainWindow.setMenuBarVisibility(false)
 
     // window actions
-    ipcMain.handle("set-window-size", (_, width: number, height: number) => {
-        if (mainWindow) mainWindow.setSize(width, height)
-    })
+    ipcMain.handle("set-window-size", (_, width?: number, height?: number) => {
+        if (!mainWindow) return
 
-    ipcMain.handle("set-default-size", () => {
-        console.log("Setting default size")
-        if (mainWindow) mainWindow.setSize(280, 354)
+        if (width && height) {
+            mainWindow.setSize(width, height)
+            return
+        }
+
+        // const wasResizable = mainWindow.isResizable()
+        // if (!wasResizable) {
+        //     mainWindow.setResizable(true)
+        mainWindow.setSize(280, 354)
+        //     mainWindow.setResizable(false)
+        // }
     })
 
     ipcMain.handle("window-close", () => {
