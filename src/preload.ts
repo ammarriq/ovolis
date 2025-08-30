@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getScreenSources: () => {
         return ipcRenderer.invoke("get-screen-sources")
     },
+    getDisplayMetrics: (displayId?: string) => {
+        return ipcRenderer.invoke("get-display-metrics", displayId)
+    },
     resizeWindow: (options) => {
         return ipcRenderer.invoke("resize-window", options)
     },

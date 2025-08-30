@@ -10,6 +10,9 @@ declare global {
             closeWindow: () => Promise<void>
 
             getScreenSources: () => Promise<ScreenSource[]>
+            getDisplayMetrics: (
+                displayId?: string,
+            ) => Promise<{ width: number; height: number; displayId: string }>
             resizeWindow: (options: {
                 appName: string
                 width: number

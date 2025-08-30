@@ -1,6 +1,6 @@
 import type { ScreenSource } from "./types/screen-sources"
 
-import { app, BrowserWindow, ipcMain, shell } from "electron"
+import { app, BrowserWindow, ipcMain, screen, shell } from "electron"
 import started from "electron-squirrel-startup"
 
 import path from "path"
@@ -101,6 +101,15 @@ const createWindow = () => {
     ipcMain.handle("get-screen-sources", takeScreenshot)
     ipcMain.handle("resize-window", resizeWindow)
     ipcMain.handle("focus-window", focusWindow)
+
+    // display metrics
+    ipcMain.handle("get-display-metrics", (_evt, displayId?: string) => {
+        const displays = screen.getAllDisplays()
+        const display =
+            displays.find((d) => d.id.toString() === displayId) ?? screen.getPrimaryDisplay()
+        const { width, height } = display.workAreaSize
+        return { width, height, displayId: display.id.toString() }
+    })
 
     // floating bar actions
     ipcMain.handle("create-floating-bar", async (_, source: ScreenSource) => {
