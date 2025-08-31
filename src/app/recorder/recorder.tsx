@@ -1,9 +1,9 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
 import { useState } from "react"
-import { createRoot } from "react-dom/client"
 import { Button } from "react-aria-components"
 
+import AppIcon from "~/assets/icons/icon.png"
 import Screens from "~/components/screens"
 import {
     Select,
@@ -22,9 +22,11 @@ import { ScreenIcon } from "~/icons/screen"
 import { VolumeIcon } from "~/icons/volume"
 import { cn } from "~/utils/cn"
 
-import AppIcon from "../assets/icons/icon.png"
+interface Props {
+    onRecord: () => void
+}
 
-const Recorder = () => {
+function Recorder({ onRecord }: Props) {
     const [modal, setModal] = useState(false)
     const [selectedSource, setSelectedSource] = useState<ScreenSource>()
 
@@ -160,7 +162,10 @@ const Recorder = () => {
                             </div>
                         </Button>
                     </fieldset>
-                    <Button className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm">
+                    <Button
+                        className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm"
+                        onPress={onRecord}
+                    >
                         Start Recording
                     </Button>
                 </aside>
@@ -179,5 +184,4 @@ const Recorder = () => {
     )
 }
 
-const root = createRoot(document.body)
-root.render(<Recorder />)
+export default Recorder

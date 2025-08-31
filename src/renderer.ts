@@ -26,9 +26,6 @@
  * ```
  */
 
-import "./app/recorder"
+import "@fontsource-variable/noto-sans-lao"
+import "./app/recorder/app"
 import "./index.css"
-
-console.log(
-    '👋 This message is being logged by "renderer.ts", included via Vite'
-)
