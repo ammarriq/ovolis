@@ -28,7 +28,7 @@ export function SelectTrigger({ className, ...props }: ButtonProps) {
     return (
         <Button
             className={cn(
-                "z-10 flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm disabled:opacity-60",
+                "z-10 flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm whitespace-nowrap disabled:opacity-60 [&>span]:w-0 [&>span]:grow [&>span]:truncate [&>svg]:size-4.5 [&>svg]:shrink-0",
                 className,
             )}
             {...props}
