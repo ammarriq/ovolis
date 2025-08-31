@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     minimizeWindow: () => ipcRenderer.invoke("window-minimize"),
     maximizeWindow: () => ipcRenderer.invoke("window-maximize"),
     closeWindow: () => ipcRenderer.invoke("window-close"),
+    startRecording: () => ipcRenderer.invoke("start-recording"),
+    stopRecording: () => ipcRenderer.invoke("stop-recording"),
 
     getScreenSources: () => {
         return ipcRenderer.invoke("get-screen-sources")
@@ -24,9 +26,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("focus-window", windowTitle)
     },
 
-    startRecording: (source: { id: string; name: string }) => {
-        return ipcRenderer.invoke("start-recording", source)
-    },
+    // startRecording: (source: { id: string; name: string }) => {
+    //     return ipcRenderer.invoke("start-recording", source)
+    // },
     saveRecording: (filePath: string, buffer: Uint8Array) => {
         return ipcRenderer.invoke("save-recording", filePath, buffer)
     },

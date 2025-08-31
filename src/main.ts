@@ -14,9 +14,12 @@ import {
     openRecordingStream,
     writeRecordingChunk,
 } from "./utils/recording-stream"
-import { saveRecording, startRecording } from "./utils/start-recording"
+import { saveRecording } from "./utils/start-recording"
 import { takeScreenshot } from "./utils/take-screenshots"
 import { focusWindow, resizeWindow } from "./utils/window-manager"
+
+const DEFAULT_WIDTH = 280
+const DEFAULT_HEIGHT = 354
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -52,10 +55,10 @@ let floatingWindow: BrowserWindow | null = null
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
-        width: 280,
-        height: 354,
-        minWidth: 280,
-        minHeight: 354,
+        width: DEFAULT_WIDTH,
+        height: DEFAULT_HEIGHT,
+        minWidth: DEFAULT_WIDTH,
+        minHeight: DEFAULT_HEIGHT,
         frame: false,
         transparent: true,
         titleBarStyle: "hidden",
@@ -75,8 +78,8 @@ const createWindow = () => {
     ipcMain.handle("set-window-size", (_, width?: number, height?: number) => {
         if (!mainWindow) return
 
-        const newWidth = width ?? 280
-        const newHeight = height ?? 354
+        const newWidth = width ?? DEFAULT_WIDTH
+        const newHeight = height ?? DEFAULT_HEIGHT
 
         mainWindow.setMinimumSize(newWidth, newHeight)
         mainWindow.setSize(newWidth, newHeight)
@@ -97,6 +100,40 @@ const createWindow = () => {
         }
     })
 
+    ipcMain.handle("start-recording", () => {
+        if (!mainWindow) return
+        mainWindow.setMinimumSize(223, 64)
+        mainWindow.setSize(223, 64)
+
+        const win = mainWindow
+        const winBounds = win.getBounds()
+        // Use the display where the window currently is
+        const display = screen.getDisplayMatching(winBounds)
+        const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
+
+        const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
+        const targetY = Math.round(areaY + (areaH - winBounds.height))
+
+        win.setPosition(targetX, targetY)
+    })
+
+    ipcMain.handle("stop-recording", async () => {
+        if (!mainWindow) return
+        mainWindow.setMinimumSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
+        mainWindow.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
+
+        const win = mainWindow
+        const winBounds = win.getBounds()
+        // Use the display where the window currently is
+        const display = screen.getDisplayMatching(winBounds)
+        const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
+
+        const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
+        const targetY = Math.round(areaY + (areaH - winBounds.height) / 2)
+
+        win.setPosition(targetX, targetY)
+    })
+
     // window manager actions
     ipcMain.handle("get-screen-sources", takeScreenshot)
     ipcMain.handle("resize-window", resizeWindow)
@@ -106,7 +143,9 @@ const createWindow = () => {
     ipcMain.handle("get-display-metrics", (_evt, displayId?: string) => {
         const displays = screen.getAllDisplays()
         const display =
-            displays.find((d) => d.id.toString() === displayId) ?? screen.getPrimaryDisplay()
+            displays.find((d) => d.id.toString() === displayId) ?? //
+            screen.getPrimaryDisplay()
+
         const { width, height } = display.workAreaSize
         return { width, height, displayId: display.id.toString() }
     })
@@ -138,9 +177,9 @@ const createWindow = () => {
     })
 
     // recording options
-    ipcMain.handle("start-recording", (_, source: Pick<ScreenSource, "id" | "name">) => {
-        return startRecording(source.id, source.name)
-    })
+    // ipcMain.handle("start-recording", (_, source: Pick<ScreenSource, "id" | "name">) => {
+    //     return startRecording(source.id, source.name)
+    // })
 
     ipcMain.handle("save-recording", async (_, filePath: string, uint8Array: Uint8Array) => {
         const buffer = Buffer.from(uint8Array)

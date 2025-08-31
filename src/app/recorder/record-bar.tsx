@@ -14,9 +14,9 @@ function RecordBar({ onStop }: Props) {
     const [isPaused, setIsPaused] = useState(false)
 
     return (
-        <main className="grid h-max gap-4 overflow-hidden p-2">
+        <main className="grid size-max gap-4 overflow-hidden p-2">
             <section
-                className="bg-background shadow-cursor flex w-max items-center overflow-x-hidden rounded-2xl py-3 pr-4 pl-3"
+                className="bg-background shadow-cursor flex items-center overflow-x-hidden rounded-2xl py-3 pr-4 pl-3"
                 style={{ WebkitAppRegion: "drag" }}
             >
                 <div className="grid shrink-0 place-items-center gap-2 rounded-md py-0.5 text-left text-sm font-medium whitespace-nowrap text-red-600">

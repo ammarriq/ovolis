@@ -7,10 +7,20 @@ import Recorder from "./recorder"
 const App = () => {
     const [isRecording, setIsRecording] = useState(false)
 
+    const onRecordingStart = () => {
+        setIsRecording(true)
+        window.electronAPI.startRecording()
+    }
+
+    const onRecordingStop = () => {
+        window.electronAPI.stopRecording()
+        setIsRecording(false)
+    }
+
     return isRecording ? (
-        <RecordBar onStop={() => setIsRecording(false)} />
+        <RecordBar onStop={onRecordingStop} />
     ) : (
-        <Recorder onRecord={() => setIsRecording(true)} />
+        <Recorder onRecord={onRecordingStart} />
     )
 }
 

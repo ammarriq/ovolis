@@ -8,6 +8,8 @@ declare global {
             minimizeWindow: () => Promise<void>
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>
+            startRecording: () => Promise<void>
+            stopRecording: () => Promise<void>
 
             getScreenSources: () => Promise<ScreenSource[]>
             getDisplayMetrics: (
