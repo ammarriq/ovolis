@@ -14,9 +14,9 @@ const RecordBar = () => {
     const handleClose = () => {
         // setIsVisible(false)
         // setSource(null)
-        // if (window.electronAPI?.closeRecordBar) {
-        //     window.electronAPI.closeRecordBar()
-        // }
+        if (window.electronAPI?.closeRecordBar) {
+            window.electronAPI.closeRecordBar()
+        }
     }
 
     const handleSourceChange = (_newSource: ScreenSource | null) => {

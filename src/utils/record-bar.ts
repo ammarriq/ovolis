@@ -1,13 +1,25 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
-import { BrowserWindow } from "electron"
+import { BrowserWindow, screen } from "electron"
 
 import path from "path"
 
 export function createRecordBar(source: ScreenSource): BrowserWindow {
+    // Desired window size
+    const windowWidth = 223
+    const windowHeight = 64
+
+    // Calculate bottom-center position on the primary display's work area
+    const { workArea } = screen.getPrimaryDisplay()
+    const margin = 12 // small offset from the very bottom
+    const x = Math.round(workArea.x + (workArea.width - windowWidth) / 2)
+    const y = Math.round(workArea.y + workArea.height - windowHeight - margin)
+
     const recordBarWindow = new BrowserWindow({
-        width: 223,
-        height: 64,
+        width: windowWidth,
+        height: windowHeight,
+        x,
+        y,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
