@@ -38,7 +38,7 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
     const streamingEnabledRef = useRef<boolean>(false)
 
     useEffect(() => {
-        if (isRecording) {
+        if (isRecording && !isPaused) {
             recordingTimerRef.current = setInterval(() => {
                 setRecordingTime((prev) => prev + 1)
             }, 1000)
@@ -47,7 +47,10 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 clearInterval(recordingTimerRef.current)
                 recordingTimerRef.current = null
             }
-            setRecordingTime(0)
+            // Only reset timer when recording stops entirely
+            if (!isRecording) {
+                setRecordingTime(0)
+            }
         }
 
         return () => {
@@ -55,7 +58,63 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 clearInterval(recordingTimerRef.current)
             }
         }
-    }, [isRecording])
+    }, [isRecording, isPaused])
+
+    // Auto-start recording once the floating bar mounts
+    useEffect(() => {
+        if (!isRecording && source) {
+            void startRecording()
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // ---- Helpers extracted for readability ----
+    const pickPreferredAudioTrack = (
+        screen: MediaStream,
+        mic: MediaStream | null,
+        mixed?: MediaStreamTrack,
+    ) => {
+        if (mixed) return mixed
+        const screenAudio = screen.getAudioTracks()[0]
+        if (screenAudio) return screenAudio
+        const micAudio = mic?.getAudioTracks()?.[0]
+        return micAudio
+    }
+    const logDisplayDiagnostics = () => {
+        console.log("=== RECORDING DIAGNOSTICS ===")
+        console.log("Screen dimensions:", {
+            width: screen.width,
+            height: screen.height,
+            availWidth: screen.availWidth,
+            availHeight: screen.availHeight,
+            pixelDepth: screen.pixelDepth,
+            colorDepth: screen.colorDepth,
+        })
+        console.log("Device pixel ratio:", window.devicePixelRatio)
+    }
+
+    const cleanupStreams = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop())
+            streamRef.current = null
+        }
+        if (screenStreamRef.current) {
+            screenStreamRef.current.getTracks().forEach((t) => t.stop())
+            screenStreamRef.current = null
+        }
+        if (micStreamRef.current) {
+            micStreamRef.current.getTracks().forEach((t) => t.stop())
+            micStreamRef.current = null
+        }
+        if (audioDestRef.current) {
+            audioDestRef.current.stream.getTracks().forEach((t) => t.stop())
+            audioDestRef.current = null
+        }
+        if (audioCtxRef.current) {
+            audioCtxRef.current.close().catch(() => {})
+            audioCtxRef.current = null
+        }
+    }
 
     const startRecording = async () => {
         if (!window.electronAPI || !source) {
@@ -63,19 +122,15 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             return
         }
 
+        // Prevent accidental re-entry if already started/paused
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            return
+        }
+
         setIsStartingRecording(true)
         try {
             // DIAGNOSTIC: Log display information
-            console.log("=== RECORDING DIAGNOSTICS ===")
-            console.log("Screen dimensions:", {
-                width: screen.width,
-                height: screen.height,
-                availWidth: screen.availWidth,
-                availHeight: screen.availHeight,
-                pixelDepth: screen.pixelDepth,
-                colorDepth: screen.colorDepth,
-            })
-            console.log("Device pixel ratio:", window.devicePixelRatio)
+            logDisplayDiagnostics()
 
             // Get recording configuration
             const recordingConfigStr = await window.electronAPI.startRecording({
@@ -153,16 +208,11 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 )
             }
 
-            // Build final combined stream: screen video + mixed audio (or fallback to system/mic audio)
+            // Build final combined stream: screen video + best-available audio
+            const preferredAudio = pickPreferredAudioTrack(stream, micStream, mixedAudioTrack)
             const combinedTracks: MediaStreamTrack[] = [
                 ...stream.getVideoTracks(),
-                ...(mixedAudioTrack
-                    ? [mixedAudioTrack]
-                    : stream.getAudioTracks().length > 0
-                      ? [stream.getAudioTracks()[0]]
-                      : micStream?.getAudioTracks()?.length
-                        ? [micStream!.getAudioTracks()[0]]
-                        : []),
+                ...(preferredAudio ? [preferredAudio] : []),
             ]
             const combinedStream = new MediaStream(combinedTracks)
 
@@ -260,28 +310,8 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 setIsRecording(false)
                 setRecordingTime(0)
 
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach((track) => track.stop())
-                    streamRef.current = null
-                }
-                if (screenStreamRef.current) {
-                    screenStreamRef.current.getTracks().forEach((t) => t.stop())
-                    screenStreamRef.current = null
-                }
-                if (micStreamRef.current) {
-                    micStreamRef.current.getTracks().forEach((t) => t.stop())
-                    micStreamRef.current = null
-                }
-                if (audioDestRef.current) {
-                    audioDestRef.current.stream.getTracks().forEach((t) => t.stop())
-                    audioDestRef.current = null
-                }
-                if (audioCtxRef.current) {
-                    try {
-                        await audioCtxRef.current.close()
-                    } catch {}
-                    audioCtxRef.current = null
-                }
+                // Unified cleanup
+                cleanupStreams()
 
                 // Clean up partial stream/file if streaming was active
                 try {
@@ -333,6 +363,7 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                     alert(`❌ Failed to save recording: ${err}`)
                 } finally {
                     setIsRecording(false)
+                    setIsPaused(false)
                     setRecordingTime(0)
                     onSourceChange(null)
                     onClose()
@@ -374,29 +405,36 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             mediaRecorderRef.current.stop()
+        } else if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
+            try {
+                mediaRecorderRef.current.stop()
+            } catch {}
         }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => track.stop())
-            streamRef.current = null
-        }
-        if (screenStreamRef.current) {
-            screenStreamRef.current.getTracks().forEach((t) => t.stop())
-            screenStreamRef.current = null
-        }
-        if (micStreamRef.current) {
-            micStreamRef.current.getTracks().forEach((t) => t.stop())
-            micStreamRef.current = null
-        }
-        if (audioDestRef.current) {
-            audioDestRef.current.stream.getTracks().forEach((t) => t.stop())
-            audioDestRef.current = null
-        }
-        if (audioCtxRef.current) {
-            audioCtxRef.current.close().catch(() => {})
-            audioCtxRef.current = null
-        }
+        cleanupStreams()
 
         // Reset state will be handled in mediaRecorder.onstop
+    }
+
+    const pauseRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            try {
+                mediaRecorderRef.current.pause()
+                setIsPaused(true)
+            } catch (e) {
+                console.warn("Pause failed or unsupported:", e)
+            }
+        }
+    }
+
+    const resumeRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
+            try {
+                mediaRecorderRef.current.resume()
+                setIsPaused(false)
+            } catch (e) {
+                console.warn("Resume failed or unsupported:", e)
+            }
+        }
     }
 
     const formatTime = (seconds: number) => {
@@ -414,33 +452,24 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 style={{ WebkitAppRegion: "drag" }}
             >
                 <div className="grid shrink-0 place-items-center gap-2 rounded-md py-0.5 text-left text-sm font-medium whitespace-nowrap text-red-600">
-                    {formatTime(recordingTime || 1)}
+                    {formatTime(recordingTime || 0)}
                 </div>
 
                 <div className="mx-4 h-3/4 border-r"></div>
 
-                {/* Record/Stop buttons */}
+                {/* Recording Controls */}
                 <div className="flex items-center gap-4">
                     <Button style={{ WebkitAppRegion: "no-drag" }} onPress={() => stopRecording()}>
                         <StopIcon className="size-5 text-red-600" />
                     </Button>
 
-                    {isPaused ? (
-                        <Button
-                            onClick={() => setIsPaused(false)}
-                            style={{ WebkitAppRegion: "no-drag" }}
-                        >
-                            <PauseIcon className="size-5" />
+                    {!isRecording || isPaused ? (
+                        <Button onPress={resumeRecording} style={{ WebkitAppRegion: "no-drag" }}>
+                            <PlayIcon className="size-5" />
                         </Button>
                     ) : (
-                        <Button
-                            onClick={() => {
-                                setIsPaused(true)
-                                startRecording()
-                            }}
-                            style={{ WebkitAppRegion: "no-drag" }}
-                        >
-                            <PlayIcon className="size-5" />
+                        <Button onPress={pauseRecording} style={{ WebkitAppRegion: "no-drag" }}>
+                            <PauseIcon className="size-5" />
                         </Button>
                     )}
                 </div>
