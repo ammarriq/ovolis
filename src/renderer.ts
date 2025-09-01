@@ -26,6 +26,5 @@
  * ```
  */
 
-import "@fontsource-variable/noto-sans-lao"
 import "./app/recorder/app"
 import "./index.css"

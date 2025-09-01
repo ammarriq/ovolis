@@ -8,7 +8,6 @@ declare global {
             minimizeWindow: () => Promise<void>
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>
-            startRecording: () => Promise<void>
             stopRecording: () => Promise<void>
 
             getScreenSources: () => Promise<ScreenSource[]>
@@ -30,8 +29,8 @@ declare global {
             deletePartialRecording: (filePath: string) => Promise<void>
             openFolder: (filePath: string) => Promise<void>
 
-            createFloatingBar: (source: ScreenSource) => Promise<void>
-            closeFloatingBar: () => Promise<void>
+            createRecordBar: (source: ScreenSource) => Promise<void>
+            closeRecordBar: () => Promise<void>
         }
     }
 }

@@ -1,6 +1,14 @@
+import "@fontsource-variable/noto-sans-lao"
+
 import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useRef, useState } from "react"
+import { Button } from "react-aria-components"
+
+import { DeleteIcon } from "~/icons/delete"
+import { PauseIcon } from "~/icons/pause"
+import { PlayIcon } from "~/icons/play"
+import { StopIcon } from "~/icons/stop"
 
 interface FloatingBarProps {
     source: ScreenSource
@@ -11,9 +19,11 @@ interface FloatingBarProps {
 
 const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBarProps) => {
     const [isRecording, setIsRecording] = useState(false)
+    const [isPaused, setIsPaused] = useState(false)
     const [recordingTime, setRecordingTime] = useState(0)
+
     // Removed FFmpeg conversion state
-    const [isStartingRecording, setIsStartingRecording] = useState(false)
+    const [_isStartingRecording, setIsStartingRecording] = useState(false)
 
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -398,64 +408,50 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
     if (!isVisible) return null
 
     return (
-        <div className="z-50 flex flex-col gap-3">
-            {/* Main floating bar */}
-            <div className="flex items-center gap-4 rounded-full border border-white/20 bg-black/80 px-6 py-3 shadow-lg backdrop-blur-sm">
-                {/* Source name */}
-                <div className="text-sm font-medium text-white" style={{ WebkitAppRegion: "drag" }}>
-                    {source.name}
+        <main className="grid size-max gap-4 overflow-hidden p-2">
+            <section
+                className="bg-background shadow-cursor flex items-center overflow-x-hidden rounded-2xl py-3 pr-4 pl-3"
+                style={{ WebkitAppRegion: "drag" }}
+            >
+                <div className="grid shrink-0 place-items-center gap-2 rounded-md py-0.5 text-left text-sm font-medium whitespace-nowrap text-red-600">
+                    {formatTime(recordingTime || 1)}
                 </div>
 
-                {/* Recording indicator and timer */}
-                {isRecording && (
-                    <div className="flex items-center gap-2">
-                        <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-                        <span className="font-mono text-sm text-white">
-                            {formatTime(recordingTime)}
-                        </span>
-                    </div>
-                )}
-
-                {/* Conversion status removed */}
+                <div className="mx-4 h-3/4 border-r"></div>
 
                 {/* Record/Stop buttons */}
-                {!isRecording ? (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            if (!isStartingRecording) {
+                <div className="flex items-center gap-4">
+                    <Button style={{ WebkitAppRegion: "no-drag" }} onPress={() => stopRecording()}>
+                        <StopIcon className="size-5 text-red-600" />
+                    </Button>
+
+                    {isPaused ? (
+                        <Button
+                            onClick={() => setIsPaused(false)}
+                            style={{ WebkitAppRegion: "no-drag" }}
+                        >
+                            <PauseIcon className="size-5" />
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={() => {
+                                setIsPaused(true)
                                 startRecording()
-                            }
-                        }}
-                        disabled={isStartingRecording}
-                        className={`${
-                            isStartingRecording
-                                ? "cursor-not-allowed bg-gray-500"
-                                : "cursor-pointer bg-red-600 hover:bg-red-700"
-                        } flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition-colors duration-200`}
-                    >
-                        <div
-                            className={`h-3 w-3 ${isStartingRecording ? "animate-pulse bg-gray-300" : "bg-white"} rounded-full`}
-                        ></div>
-                        {isStartingRecording ? "Starting..." : "Start Recording"}
-                    </button>
-                ) : isRecording ? (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            stopRecording()
-                        }}
-                        className="flex cursor-pointer items-center gap-2 rounded-full bg-gray-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-gray-700"
-                        style={{ cursor: "pointer" }}
-                    >
-                        <div className="h-3 w-3 bg-white"></div>
-                        Stop Recording
-                    </button>
-                ) : (
-                    <div className="px-4 py-2 text-sm text-white">Processing...</div>
-                )}
-            </div>
-        </div>
+                            }}
+                            style={{ WebkitAppRegion: "no-drag" }}
+                        >
+                            <PlayIcon className="size-5" />
+                        </Button>
+                    )}
+                </div>
+
+                <div className="mx-4 h-3/4 border-r"></div>
+
+                <Button style={{ WebkitAppRegion: "no-drag" }}>
+                    <DeleteIcon className="size-5" />
+                </Button>
+            </section>
+        </main>
     )
 }
 

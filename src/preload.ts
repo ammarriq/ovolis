@@ -4,13 +4,14 @@ import { contextBridge, ipcRenderer } from "electron"
 
 // Expose window controls to renderer process
 contextBridge.exposeInMainWorld("electronAPI", {
-    setWindowSize: (width: number, height: number) => {
+    setWindowSize: (width?: number, height?: number) => {
         return ipcRenderer.invoke("set-window-size", width, height)
     },
     minimizeWindow: () => ipcRenderer.invoke("window-minimize"),
     maximizeWindow: () => ipcRenderer.invoke("window-maximize"),
     closeWindow: () => ipcRenderer.invoke("window-close"),
-    startRecording: () => ipcRenderer.invoke("start-recording"),
+    startRecording: (source: { id: string; name: string }) =>
+        ipcRenderer.invoke("start-recording", source),
     stopRecording: () => ipcRenderer.invoke("stop-recording"),
 
     getScreenSources: () => {
@@ -51,12 +52,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("open-folder", filePath)
     },
 
-    createFloatingBar: (source: ScreenSource) => {
-        return ipcRenderer.invoke("create-floating-bar", source)
+    createRecordBar: (source: ScreenSource) => {
+        return ipcRenderer.invoke("create-record-bar", source)
     },
-    closeFloatingBar: () => {
-        return ipcRenderer.invoke("close-floating-bar")
+    closeRecordBar: () => {
+        return ipcRenderer.invoke("close-record-bar")
     },
 
     // FFmpeg APIs removed; recordings are saved directly as mp4
 } satisfies Window["electronAPI"])
+
+// Bridge main-process IPC to renderer DOM event for floating bar initialization
+ipcRenderer.on("record-bar:source-selected", (_evt, source: ScreenSource) => {
+    window.dispatchEvent(
+        new CustomEvent("source-selected", {
+            detail: { source },
+        }),
+    )
+})

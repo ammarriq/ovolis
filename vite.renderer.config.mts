@@ -15,8 +15,8 @@ export default defineConfig({
     build: {
         rollupOptions: {
             input: {
-                main: path.resolve(__dirname, "app.recorder.html"),
-                floating: path.resolve(__dirname, "app.floating-bar.html"),
+                recorder: path.resolve(__dirname, "app.recorder.html"),
+                recordBar: path.resolve(__dirname, "app.record-bar.html"),
             },
         },
     },

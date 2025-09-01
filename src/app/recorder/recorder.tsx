@@ -23,7 +23,7 @@ import { VolumeIcon } from "~/icons/volume"
 import { cn } from "~/utils/cn"
 
 interface Props {
-    onRecord: () => void
+    onRecord: (source: ScreenSource) => void
 }
 
 function Recorder({ onRecord }: Props) {
@@ -50,8 +50,8 @@ function Recorder({ onRecord }: Props) {
         setSelectedSource(source)
         // setModal(false)
 
-        // try {
-        //     await window.electronAPI.createFloatingBar({ ...source })
+        // try {Entire scre
+        //     await window.electronAPI.createRecordBar({ ...source })
         // } catch (error) {
         //     console.error("Failed to create floating window:", error)
         //     alert("Failed to create floating window")
@@ -164,7 +164,7 @@ function Recorder({ onRecord }: Props) {
                     </fieldset>
                     <Button
                         className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm"
-                        onPress={onRecord}
+                        onPress={() => onRecord(selectedSource)}
                     >
                         Start Recording
                     </Button>

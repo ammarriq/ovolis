@@ -1,0 +1,48 @@
+import type { ScreenSource } from "~/types/screen-sources"
+
+import { BrowserWindow } from "electron"
+
+import path from "path"
+
+export function createRecordBar(source: ScreenSource): BrowserWindow {
+    const recordBarWindow = new BrowserWindow({
+        width: 223,
+        height: 64,
+        frame: false,
+        transparent: true,
+        alwaysOnTop: true,
+        show: false,
+        resizable: false,
+        skipTaskbar: true,
+        movable: true,
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+        },
+    })
+
+    recordBarWindow.setMenuBarVisibility(false)
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        const filePath = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/app.record-bar.html`
+        recordBarWindow.loadURL(filePath)
+    } else {
+        const filePath = `../renderer/${MAIN_WINDOW_VITE_NAME}/app.record-bar.html`
+        recordBarWindow.loadFile(path.join(__dirname, filePath))
+    }
+
+    // Send source data to floating window when ready
+    recordBarWindow.webContents.once("did-finish-load", () => {
+        // Safer than executeJavaScript: use IPC to notify renderer
+        if (!recordBarWindow.isDestroyed()) {
+            recordBarWindow.webContents.send("record-bar:source-selected", { ...source })
+        }
+        // Show after the content is ready to avoid white flash on spawn
+        if (!recordBarWindow.isDestroyed()) {
+            recordBarWindow.show()
+        }
+    })
+
+    return recordBarWindow
+}

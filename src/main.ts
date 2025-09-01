@@ -6,7 +6,7 @@ import started from "electron-squirrel-startup"
 import path from "path"
 
 import { fixMp4Metadata } from "./utils/ffmpeg-post"
-import { createFloatingBar } from "./utils/floating-bar"
+import { createRecordBar } from "./utils/record-bar"
 import {
     closeRecordingStream,
     deletePartialRecording,
@@ -14,7 +14,7 @@ import {
     openRecordingStream,
     writeRecordingChunk,
 } from "./utils/recording-stream"
-import { saveRecording } from "./utils/start-recording"
+import { saveRecording, startRecording } from "./utils/start-recording"
 import { takeScreenshot } from "./utils/take-screenshots"
 import { focusWindow, resizeWindow } from "./utils/window-manager"
 
@@ -100,25 +100,27 @@ const createWindow = () => {
         }
     })
 
-    ipcMain.handle("start-recording", () => {
-        if (!mainWindow) return
-        mainWindow.setMinimumSize(223, 64)
-        mainWindow.setSize(223, 64)
+    // ipcMain.handle("start-recording", () => {
+    //     if (!mainWindow) return
 
-        const win = mainWindow
-        const winBounds = win.getBounds()
-        // Use the display where the window currently is
-        const display = screen.getDisplayMatching(winBounds)
-        const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
+    //     mainWindow.setMinimumSize(223, 64)
+    //     mainWindow.setSize(223, 64)
 
-        const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
-        const targetY = Math.round(areaY + (areaH - winBounds.height))
+    //     const win = mainWindow
+    //     const winBounds = win.getBounds()
+    //     // Use the display where the window currently is
+    //     const display = screen.getDisplayMatching(winBounds)
+    //     const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
 
-        win.setPosition(targetX, targetY)
-    })
+    //     const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
+    //     const targetY = Math.round(areaY + (areaH - winBounds.height))
+
+    //     win.setPosition(targetX, targetY)
+    // })
 
     ipcMain.handle("stop-recording", async () => {
         if (!mainWindow) return
+
         mainWindow.setMinimumSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
         mainWindow.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
 
@@ -151,10 +153,10 @@ const createWindow = () => {
     })
 
     // floating bar actions
-    ipcMain.handle("create-floating-bar", async (_, source: ScreenSource) => {
+    ipcMain.handle("create-record-bar", async (_, source: ScreenSource) => {
         if (floatingWindow) floatingWindow.close()
 
-        floatingWindow = createFloatingBar(_, source)
+        floatingWindow = createRecordBar(source)
         floatingWindow.on("closed", () => {
             floatingWindow = null
         })
@@ -164,7 +166,7 @@ const createWindow = () => {
         return { success: true }
     })
 
-    ipcMain.handle("close-floating-bar", () => {
+    ipcMain.handle("close-record-bar", () => {
         if (floatingWindow) {
             floatingWindow.close()
             floatingWindow = null
@@ -177,9 +179,9 @@ const createWindow = () => {
     })
 
     // recording options
-    // ipcMain.handle("start-recording", (_, source: Pick<ScreenSource, "id" | "name">) => {
-    //     return startRecording(source.id, source.name)
-    // })
+    ipcMain.handle("start-recording", (_, source: Pick<ScreenSource, "id" | "name">) => {
+        return startRecording(source.id, source.name)
+    })
 
     ipcMain.handle("save-recording", async (_, filePath: string, uint8Array: Uint8Array) => {
         const buffer = Buffer.from(uint8Array)
