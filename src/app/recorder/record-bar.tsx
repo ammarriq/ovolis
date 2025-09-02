@@ -31,6 +31,7 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
     const screenStreamRef = useRef<MediaStream | null>(null)
+    const systemAudioStreamRef = useRef<MediaStream | null>(null)
     const micStreamRef = useRef<MediaStream | null>(null)
     const audioCtxRef = useRef<AudioContext | null>(null)
     const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null)
@@ -101,6 +102,10 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             screenStreamRef.current.getTracks().forEach((t) => t.stop())
             screenStreamRef.current = null
         }
+        if (systemAudioStreamRef.current) {
+            systemAudioStreamRef.current.getTracks().forEach((t) => t.stop())
+            systemAudioStreamRef.current = null
+        }
         if (micStreamRef.current) {
             micStreamRef.current.getTracks().forEach((t) => t.stop())
             micStreamRef.current = null
@@ -153,6 +158,29 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             } catch (primaryError) {
                 console.warn("Primary capture method failed, trying fallback:", primaryError)
             }
+
+            // Best-effort: if the primary stream lacks system audio (common for window-only capture),
+            // try to acquire a dedicated system loopback audio stream and mix it in.
+            let systemAudioStream: MediaStream | null = null
+            try {
+                if (!stream.getAudioTracks().length) {
+                    // Electron/Chromium-specific constraint for system loopback
+                    systemAudioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            mandatory: {
+                                chromeMediaSource: "desktop",
+                                // Intentionally omit chromeMediaSourceId to request loopback
+                            },
+                        } as MediaTrackConstraints,
+                        video: false,
+                    })
+                    if (systemAudioStream.getAudioTracks().length) {
+                        console.log("Acquired dedicated system audio loopback track")
+                    }
+                }
+            } catch (sysErr) {
+                console.warn("System loopback audio not available:", sysErr)
+            }
             let micStream: MediaStream | null = null
             try {
                 micStream = await navigator.mediaDevices.getUserMedia({
@@ -169,18 +197,30 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
 
             let mixedAudioTrack: MediaStreamTrack | undefined
             try {
-                const hasSystemAudio = stream.getAudioTracks().length > 0
-                const hasMicAudio = micStream?.getAudioTracks().length
+                const hasSystemAudio =
+                    stream.getAudioTracks().length > 0 ||
+                    systemAudioStream?.getAudioTracks().length > 0
+
+                const hasMicAudio = micStream?.getAudioTracks().length > 0
                 if (hasSystemAudio || hasMicAudio) {
                     const audioCtx = new window.AudioContext()
                     audioCtxRef.current = audioCtx
                     const dest = audioCtx.createMediaStreamDestination()
                     audioDestRef.current = dest
 
-                    if (hasSystemAudio) {
-                        const systemAudioOnly = new MediaStream(stream.getAudioTracks())
+                    // Add system audio from primary stream, if present
+                    const primarySysTracks = stream.getAudioTracks()
+                    if (primarySysTracks.length > 0) {
+                        const systemAudioOnly = new MediaStream(primarySysTracks)
                         const sysSource = audioCtx.createMediaStreamSource(systemAudioOnly)
                         sysSource.connect(dest)
+                    }
+                    // Or add system loopback stream if that was acquired
+                    const loopbackTracks = systemAudioStream?.getAudioTracks() ?? []
+                    if (loopbackTracks.length > 0) {
+                        const loopbackOnly = new MediaStream(loopbackTracks)
+                        const loopSource = audioCtx.createMediaStreamSource(loopbackOnly)
+                        loopSource.connect(dest)
                     }
                     if (hasMicAudio) {
                         const micAudioOnly = new MediaStream(micStream!.getAudioTracks())
@@ -197,7 +237,12 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 )
             }
 
-            const preferredAudio = pickPreferredAudioTrack(stream, micStream, mixedAudioTrack)
+            const preferredAudio = pickPreferredAudioTrack(
+                // Prefer mixed track when available; otherwise fallbacks inside helper
+                stream,
+                micStream,
+                mixedAudioTrack,
+            )
             const combinedTracks: MediaStreamTrack[] = [
                 ...stream.getVideoTracks(),
                 ...(preferredAudio ? [preferredAudio] : []),
@@ -205,6 +250,7 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             const combinedStream = new MediaStream(combinedTracks)
 
             screenStreamRef.current = stream
+            systemAudioStreamRef.current = systemAudioStream
             micStreamRef.current = micStream
             streamRef.current = combinedStream
 
@@ -259,24 +305,22 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
 
             mediaRecorder.ondataavailable = async (event) => {
                 try {
-                    if (event.data && event.data.size > 0) {
-                        if (streamingEnabledRef.current && filePathRef.current) {
-                            const doWrite = async () => {
-                                const ab = await event.data.arrayBuffer()
-                                const uint8 = new Uint8Array(ab)
-                                await window.electronAPI.writeRecordingChunk(
-                                    filePathRef.current!,
-                                    uint8,
-                                )
-                            }
-                            writeQueueRef.current = writeQueueRef.current
-                                .then(doWrite)
-                                .catch((err) => {
-                                    console.error("Streaming write error:", err)
-                                })
-                        } else {
-                            chunksRef.current.push(event.data)
+                    if (!event.data || event.data.size <= 0) return
+
+                    if (streamingEnabledRef.current && filePathRef.current) {
+                        const doWrite = async () => {
+                            const ab = await event.data.arrayBuffer()
+                            const uint8 = new Uint8Array(ab)
+                            await window.electronAPI.writeRecordingChunk(
+                                filePathRef.current!,
+                                uint8,
+                            )
                         }
+                        writeQueueRef.current = writeQueueRef.current.then(doWrite).catch((err) => {
+                            console.error("Streaming write error:", err)
+                        })
+                    } else {
+                        chunksRef.current.push(event.data)
                     }
                 } catch (e) {
                     console.error("Chunk handling error:", e)

@@ -12,6 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select"
+import Switch from "~/components/ui/switch"
 import useDevices from "~/hooks/use-devices"
 import useDisplayMetrics from "~/hooks/use-display-metrics"
 import useScreenSources from "~/hooks/use-screen-sources"
@@ -20,7 +21,6 @@ import { CloseIcon } from "~/icons/close"
 import { MicIcon } from "~/icons/mic"
 import { ScreenIcon } from "~/icons/screen"
 import { VolumeIcon } from "~/icons/volume"
-import { cn } from "~/utils/cn"
 
 interface Props {
     onRecord: (source: ScreenSource) => void
@@ -30,8 +30,8 @@ function Recorder({ onRecord }: Props) {
     const [modal, setModal] = useState(false)
     const [selectedSource, setSelectedSource] = useState<ScreenSource>()
 
-    const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
     const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
+    const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
     const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(false)
 
     const screenSources = useScreenSources()
@@ -105,21 +105,27 @@ function Recorder({ onRecord }: Props) {
                     <fieldset className="mt-4 space-y-2">
                         <h3 className="mb-2 text-xs font-bold">Record Settings</h3>
                         <Select
-                            selectedKey={selectedCameraId ?? undefined}
-                            onSelectionChange={(key) =>
-                                setSelectedCameraId((key as string) ?? null)
-                            }
+                            aria-label="Select Camera"
                             placeholder="Camera"
+                            selectedKey={selectedCameraId ?? undefined}
+                            onSelectionChange={(key) => {
+                                setSelectedCameraId((key as string) || null)
+                            }}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="py-1.5">
                                 <CameraIcon className="text-primary size-4.5" />
                                 <SelectValue />
+                                <Switch isOn={selectedCameraId !== null} />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem id="none">No Camera</SelectItem>
+                                <SelectItem id="">No Camera</SelectItem>
                                 {cameras.map((c, idx) => (
-                                    <SelectItem key={c.deviceId} id={c.deviceId}>
+                                    <SelectItem
+                                        key={c.deviceId}
+                                        id={c.deviceId}
+                                        aria-label={c.label || `Camera ${idx + 1}`}
+                                    >
                                         {c.label || `Camera ${idx + 1}`}
                                     </SelectItem>
                                 ))}
@@ -127,17 +133,21 @@ function Recorder({ onRecord }: Props) {
                         </Select>
 
                         <Select
-                            selectedKey={selectedMicId ?? undefined}
-                            onSelectionChange={(key) => setSelectedMicId((key as string) ?? null)}
+                            aria-label="Select Microphone"
                             placeholder="Microphone"
+                            selectedKey={selectedMicId ?? undefined}
+                            onSelectionChange={(key) => {
+                                setSelectedMicId((key as string) || null)
+                            }}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="py-1.5">
                                 <MicIcon className="text-primary size-4.5" />
                                 <SelectValue />
+                                <Switch isOn={selectedMicId !== null} />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem id="none">No Microphone</SelectItem>
+                                <SelectItem id="">No Microphone</SelectItem>
                                 {mics.map((m, idx) => (
                                     <SelectItem key={m.deviceId} id={m.deviceId}>
                                         {m.label || `Microphone ${idx + 1}`}
@@ -152,14 +162,7 @@ function Recorder({ onRecord }: Props) {
                         >
                             <VolumeIcon className="text-primary size-4.5" />
                             <p>System Sound</p>
-                            <div
-                                className={cn(
-                                    "ml-auto grid w-10 place-items-center rounded-md py-0.5 font-semibold text-[#fff]",
-                                    isSystemSoundEnabled ? "bg-green-600" : "bg-red-600",
-                                )}
-                            >
-                                {isSystemSoundEnabled ? "On" : "Off"}
-                            </div>
+                            <Switch isOn={isSystemSoundEnabled} />
                         </Button>
                     </fieldset>
                     <Button

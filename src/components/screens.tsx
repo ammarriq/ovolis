@@ -1,5 +1,7 @@
 import type { ScreenSource } from "~/types/screen-sources"
 
+import { useState } from "react"
+
 import useLiveScreen from "~/hooks/use-live-screen"
 import { ArrowLeftIcon } from "~/icons/arrow-left"
 import { CloseIcon } from "~/icons/close"
@@ -104,6 +106,7 @@ function Screens({
     )
 
     const { videoRef } = useLiveScreen({ selectedScreen })
+    const [isScreenOpen, setIsScreenOpen] = useState(false)
 
     const handleResize = async (width: number, height: number) => {
         if (!selectedScreen) return
@@ -134,7 +137,7 @@ function Screens({
                     <button
                         className="relative -mr-2 grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={() => onScreenSelected(null)}
+                        onClick={() => setIsScreenOpen(false)}
                     >
                         <ArrowLeftIcon strokeWidth={2} className="size-4" />
                     </button>
@@ -150,7 +153,7 @@ function Screens({
             </header>
 
             <aside className="grid overflow-y-auto px-4 pb-4">
-                {selectedScreen ? (
+                {isScreenOpen ? (
                     <div
                         className="hover:bg-accent bg-accent/10 ring-border relative grid w-full gap-2 rounded-md border"
                         // onClick={() => selectSource(source)}
@@ -234,7 +237,14 @@ function Screens({
                             <button
                                 key={source.id}
                                 className="hover:bg-accent bg-accent/10 ring-border flex flex-col gap-2 rounded-md border"
-                                onClick={() => onScreenSelected(source)}
+                                onClick={() => {
+                                    onScreenSelected(source)
+                                    if (source.id?.startsWith("window:")) {
+                                        setIsScreenOpen(true)
+                                    } else {
+                                        onClose()
+                                    }
+                                }}
                             >
                                 <div className="h-24 w-full shrink-0">
                                     <img

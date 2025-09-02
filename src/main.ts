@@ -118,23 +118,23 @@ const createWindow = () => {
     //     win.setPosition(targetX, targetY)
     // })
 
-    ipcMain.handle("stop-recording", async () => {
-        if (!mainWindow) return
+    // ipcMain.handle("stop-recording", async () => {
+    //     if (!mainWindow) return
 
-        mainWindow.setMinimumSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
-        mainWindow.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
+    //     mainWindow.setMinimumSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
+    //     mainWindow.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
 
-        const win = mainWindow
-        const winBounds = win.getBounds()
-        // Use the display where the window currently is
-        const display = screen.getDisplayMatching(winBounds)
-        const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
+    //     const win = mainWindow
+    //     const winBounds = win.getBounds()
+    //     // Use the display where the window currently is
+    //     const display = screen.getDisplayMatching(winBounds)
+    //     const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
 
-        const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
-        const targetY = Math.round(areaY + (areaH - winBounds.height) / 2)
+    //     const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
+    //     const targetY = Math.round(areaY + (areaH - winBounds.height) / 2)
 
-        win.setPosition(targetX, targetY)
-    })
+    //     win.setPosition(targetX, targetY)
+    // })
 
     // window manager actions
     ipcMain.handle("get-screen-sources", takeScreenshot)
