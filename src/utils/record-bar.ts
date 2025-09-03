@@ -1,10 +1,10 @@
-import type { ScreenSource } from "~/types/screen-sources"
+import type { RecordConfig } from "~/types/record-config"
 
 import { BrowserWindow, screen } from "electron"
 
 import path from "path"
 
-export function createRecordBar(source: ScreenSource): BrowserWindow {
+export function createRecordBar(config: RecordConfig): BrowserWindow {
     // Desired window size
     const windowWidth = 223
     const windowHeight = 64
@@ -48,7 +48,7 @@ export function createRecordBar(source: ScreenSource): BrowserWindow {
     recordBarWindow.webContents.once("did-finish-load", () => {
         // Safer than executeJavaScript: use IPC to notify renderer
         if (!recordBarWindow.isDestroyed()) {
-            recordBarWindow.webContents.send("record-bar:source-selected", { ...source })
+            recordBarWindow.webContents.send("record-bar:config-selected", { ...config })
         }
         // Show after the content is ready to avoid white flash on spawn
         if (!recordBarWindow.isDestroyed()) {

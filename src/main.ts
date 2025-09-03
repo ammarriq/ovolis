@@ -1,4 +1,4 @@
-import type { ScreenSource } from "./types/screen-sources"
+import type { RecordConfig } from "./types/record-config"
 
 import { app, BrowserWindow, ipcMain, screen, shell } from "electron"
 import started from "electron-squirrel-startup"
@@ -153,10 +153,10 @@ const createWindow = () => {
     })
 
     // floating bar actions
-    ipcMain.handle("create-record-bar", async (_, source: ScreenSource) => {
+    ipcMain.handle("create-record-bar", async (_, config: RecordConfig) => {
         if (floatingWindow) floatingWindow.close()
 
-        floatingWindow = createRecordBar(source)
+        floatingWindow = createRecordBar(config)
         floatingWindow.on("closed", () => {
             floatingWindow = null
         })

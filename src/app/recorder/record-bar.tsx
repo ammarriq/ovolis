@@ -1,26 +1,36 @@
 import "@fontsource-variable/noto-sans-lao"
 import "~/index.css"
 
-import type { ScreenSource } from "~/types/screen-sources"
+import type { RecordConfig } from "~/types/record-config"
 
 import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { Button } from "react-aria-components"
 
-import useScreenSource from "~/hooks/use-screen-source"
+import useRecordConfig from "~/hooks/use-record-config"
 import { DeleteIcon } from "~/icons/delete"
 import { PauseIcon } from "~/icons/pause"
 import { PlayIcon } from "~/icons/play"
 import { StopIcon } from "~/icons/stop"
 
 interface FloatingBarProps {
-    source: ScreenSource
+    source: RecordConfig["source"]
+    selectedMicId: string | null
+    selectedCameraId: string | null
+    isSystemSoundEnabled: boolean
     isVisible: boolean
     onClose: () => void
-    onSourceChange: (source: ScreenSource | null) => void
+    onSourceChange: (source: RecordConfig["source"] | null) => void
 }
 
-const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBarProps) => {
+const FloatingBar = ({
+    source,
+    selectedMicId,
+    isSystemSoundEnabled,
+    isVisible,
+    onClose,
+    onSourceChange,
+}: FloatingBarProps) => {
     const [isRecording, setIsRecording] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
     const [recordingTime, setRecordingTime] = useState(0)
@@ -163,7 +173,7 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             // try to acquire a dedicated system loopback audio stream and mix it in.
             let systemAudioStream: MediaStream | null = null
             try {
-                if (!stream.getAudioTracks().length) {
+                if (isSystemSoundEnabled && !stream.getAudioTracks().length) {
                     // Electron/Chromium-specific constraint for system loopback
                     systemAudioStream = await navigator.mediaDevices.getUserMedia({
                         audio: {
@@ -183,14 +193,17 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             }
             let micStream: MediaStream | null = null
             try {
-                micStream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true,
-                    },
-                    video: false,
-                })
+                if (selectedMicId) {
+                    micStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            deviceId: { exact: selectedMicId },
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                        },
+                        video: false,
+                    })
+                }
             } catch (micErr) {
                 console.warn("Microphone capture failed; continuing without mic:", micErr)
             }
@@ -198,8 +211,9 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
             let mixedAudioTrack: MediaStreamTrack | undefined
             try {
                 const hasSystemAudio =
-                    stream.getAudioTracks().length > 0 ||
-                    systemAudioStream?.getAudioTracks().length > 0
+                    isSystemSoundEnabled &&
+                    (stream.getAudioTracks().length > 0 ||
+                        (systemAudioStream?.getAudioTracks().length ?? 0) > 0)
 
                 const hasMicAudio = micStream?.getAudioTracks().length > 0
                 if (hasSystemAudio || hasMicAudio) {
@@ -209,14 +223,16 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                     audioDestRef.current = dest
 
                     // Add system audio from primary stream, if present
-                    const primarySysTracks = stream.getAudioTracks()
+                    const primarySysTracks = isSystemSoundEnabled ? stream.getAudioTracks() : []
                     if (primarySysTracks.length > 0) {
                         const systemAudioOnly = new MediaStream(primarySysTracks)
                         const sysSource = audioCtx.createMediaStreamSource(systemAudioOnly)
                         sysSource.connect(dest)
                     }
                     // Or add system loopback stream if that was acquired
-                    const loopbackTracks = systemAudioStream?.getAudioTracks() ?? []
+                    const loopbackTracks = isSystemSoundEnabled
+                        ? (systemAudioStream?.getAudioTracks() ?? [])
+                        : []
                     if (loopbackTracks.length > 0) {
                         const loopbackOnly = new MediaStream(loopbackTracks)
                         const loopSource = audioCtx.createMediaStreamSource(loopbackOnly)
@@ -237,12 +253,10 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
                 )
             }
 
-            const preferredAudio = pickPreferredAudioTrack(
-                // Prefer mixed track when available; otherwise fallbacks inside helper
-                stream,
-                micStream,
-                mixedAudioTrack,
-            )
+            let preferredAudio: MediaStreamTrack | undefined
+            if (isSystemSoundEnabled || (micStream && micStream.getAudioTracks().length)) {
+                preferredAudio = pickPreferredAudioTrack(stream, micStream, mixedAudioTrack)
+            }
             const combinedTracks: MediaStreamTrack[] = [
                 ...stream.getVideoTracks(),
                 ...(preferredAudio ? [preferredAudio] : []),
@@ -499,7 +513,7 @@ const FloatingBar = ({ source, isVisible, onClose, onSourceChange }: FloatingBar
 }
 
 const RecordBar = () => {
-    const { source, isLoading } = useScreenSource()
+    const { config, isLoading } = useRecordConfig()
 
     const handleClose = () => {
         // setIsVisible(false)
@@ -509,15 +523,14 @@ const RecordBar = () => {
         }
     }
 
-    const handleSourceChange = (_newSource: ScreenSource | null) => {
+    const handleSourceChange = (_newSource: RecordConfig["source"] | null) => {
         // setSource(newSource)
         // if (!newSource) {
         //     handleClose()
         // }
     }
 
-    console.log(source)
-    if (!source || isLoading) {
+    if (!config || isLoading) {
         return (
             <div className="flex h-full w-full items-center justify-center bg-transparent">
                 <div className="text-sm text-white">Waiting for source selection...</div>
@@ -528,7 +541,10 @@ const RecordBar = () => {
     return (
         <div className="flex h-full w-full items-center justify-center bg-transparent">
             <FloatingBar
-                source={source}
+                source={config.source}
+                selectedMicId={config.selectedMicId}
+                selectedCameraId={config.selectedCameraId}
+                isSystemSoundEnabled={config.isSystemSoundEnabled}
                 isVisible={!isLoading}
                 onClose={handleClose}
                 onSourceChange={handleSourceChange}

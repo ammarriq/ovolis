@@ -1,4 +1,5 @@
 import type { ScreenSource } from "~/types/screen-sources"
+import type { RecordConfig } from "~/types/record-config"
 
 // Declare electron API types
 declare global {
@@ -29,7 +30,7 @@ declare global {
             deletePartialRecording: (filePath: string) => Promise<void>
             openFolder: (filePath: string) => Promise<void>
 
-            createRecordBar: (source: ScreenSource) => Promise<void>
+            createRecordBar: (config: RecordConfig) => Promise<void>
             closeRecordBar: () => Promise<void>
         }
     }

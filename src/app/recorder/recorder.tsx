@@ -1,6 +1,7 @@
+import type { RecordConfig } from "~/types/record-config"
 import type { ScreenSource } from "~/types/screen-sources"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "react-aria-components"
 
 import AppIcon from "~/assets/icons/icon.png"
@@ -23,7 +24,7 @@ import { ScreenIcon } from "~/icons/screen"
 import { VolumeIcon } from "~/icons/volume"
 
 interface Props {
-    onRecord: (source: ScreenSource) => void
+    onRecord: (config: RecordConfig) => void
 }
 
 function Recorder({ onRecord }: Props) {
@@ -32,31 +33,40 @@ function Recorder({ onRecord }: Props) {
 
     const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
     const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
-    const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(false)
+    const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(true)
 
     const screenSources = useScreenSources()
     const displayMetrics = useDisplayMetrics({
         selectedSource,
     })
 
+    // Only use device lists; manage selections locally to avoid auto-resets
     const { mics, cameras } = useDevices({
-        onMicChange: setSelectedMicId,
+        onMicChange: () => {},
         onCameraChange: setSelectedCameraId,
     })
 
     // Recording timer effect
 
-    const selectSource = async (source: ScreenSource) => {
-        setSelectedSource(source)
-        // setModal(false)
+    // Auto-select default screen source (prefer entire screen)
+    useEffect(() => {
+        if (!selectedSource && screenSources.length > 0) {
+            const entireScreen =
+                screenSources.find((s) => s.id?.startsWith("screen:")) ||
+                screenSources.find((s) => /entire\s*screen/i.test(s.name)) ||
+                screenSources[0]
+            setSelectedSource(entireScreen)
+        }
+    }, [screenSources, selectedSource])
 
-        // try {Entire scre
-        //     await window.electronAPI.createRecordBar({ ...source })
-        // } catch (error) {
-        //     console.error("Failed to create floating window:", error)
-        //     alert("Failed to create floating window")
-        // }
-    }
+    // Auto-select microphone only once on initial mount (if available)
+    const didInitMicRef = useRef(false)
+    useEffect(() => {
+        if (!didInitMicRef.current && mics.length > 0) {
+            setSelectedMicId((prev) => (prev === null ? mics[0].deviceId : prev))
+            didInitMicRef.current = true
+        }
+    }, [mics])
 
     const toggleScreenSelection = () => {
         if (modal) {
@@ -98,7 +108,9 @@ function Recorder({ onRecord }: Props) {
                             onPress={toggleScreenSelection}
                         >
                             <ScreenIcon className="text-primary size-4.5" />
-                            <p className="w-0 grow truncate">{selectedSource?.name ?? "Screen"}</p>
+                            <p className="w-0 grow truncate">
+                                {selectedSource?.name ?? "Entire Screen"}
+                            </p>
                         </Button>
                     </fieldset>
 
@@ -167,7 +179,15 @@ function Recorder({ onRecord }: Props) {
                     </fieldset>
                     <Button
                         className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm"
-                        onPress={() => onRecord(selectedSource)}
+                        onPress={() =>
+                            selectedSource &&
+                            onRecord({
+                                source: selectedSource,
+                                selectedMicId,
+                                selectedCameraId,
+                                isSystemSoundEnabled,
+                            })
+                        }
                     >
                         Start Recording
                     </Button>
@@ -179,7 +199,7 @@ function Recorder({ onRecord }: Props) {
                     displayMetrics={displayMetrics}
                     screenSources={screenSources}
                     selectedScreen={selectedSource}
-                    onScreenSelected={selectSource}
+                    onScreenSelected={setSelectedSource}
                     onClose={toggleScreenSelection}
                 />
             ) : null}

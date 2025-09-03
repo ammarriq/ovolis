@@ -1,4 +1,4 @@
-import type { ScreenSource } from "./types/screen-sources"
+import type { RecordConfig } from "./types/record-config"
 
 import { contextBridge, ipcRenderer } from "electron"
 
@@ -52,8 +52,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("open-folder", filePath)
     },
 
-    createRecordBar: (source: ScreenSource) => {
-        return ipcRenderer.invoke("create-record-bar", source)
+    createRecordBar: (config: RecordConfig) => {
+        return ipcRenderer.invoke("create-record-bar", config)
     },
     closeRecordBar: () => {
         return ipcRenderer.invoke("close-record-bar")
@@ -63,10 +63,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 } satisfies Window["electronAPI"])
 
 // Bridge main-process IPC to renderer DOM event for floating bar initialization
-ipcRenderer.on("record-bar:source-selected", (_evt, source: ScreenSource) => {
+ipcRenderer.on("record-bar:config-selected", (_evt, config: RecordConfig) => {
     window.dispatchEvent(
-        new CustomEvent("source-selected", {
-            detail: { source },
+        new CustomEvent("record-config", {
+            detail: { config },
         }),
     )
 })
