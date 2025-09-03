@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/select"
 import Switch from "~/components/ui/switch"
 import useDevices from "~/hooks/use-devices"
+import useDevicesReady from "~/hooks/use-devices-ready"
 import useDisplayMetrics from "~/hooks/use-display-metrics"
 import useScreenSources from "~/hooks/use-screen-sources"
 import { CameraIcon } from "~/icons/camera"
@@ -35,18 +36,12 @@ function Recorder({ onRecord }: Props) {
     const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
     const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(true)
 
+    const { mics, cameras } = useDevices()
+    const areDevicesReady = useDevicesReady()
     const screenSources = useScreenSources()
-    const displayMetrics = useDisplayMetrics({
-        selectedSource,
-    })
+    const displayMetrics = useDisplayMetrics({ selectedSource })
 
     // Only use device lists; manage selections locally to avoid auto-resets
-    const { mics, cameras } = useDevices({
-        onMicChange: () => {},
-        onCameraChange: setSelectedCameraId,
-    })
-
-    // Recording timer effect
 
     // Auto-select default screen source (prefer entire screen)
     useEffect(() => {
@@ -59,7 +54,7 @@ function Recorder({ onRecord }: Props) {
         }
     }, [screenSources, selectedSource])
 
-    // Auto-select microphone only once on initial mount (if available)
+    // Auto-select microphone once, but don't block UI on it
     const didInitMicRef = useRef(false)
     useEffect(() => {
         if (!didInitMicRef.current && mics.length > 0) {
@@ -67,6 +62,8 @@ function Recorder({ onRecord }: Props) {
             didInitMicRef.current = true
         }
     }, [mics])
+
+    // Only show UI after: mounted, screen selected, and devices enumerated at least once
 
     const toggleScreenSelection = () => {
         if (modal) {
@@ -77,6 +74,8 @@ function Recorder({ onRecord }: Props) {
             window.electronAPI.setWindowSize(420 + 280)
         }
     }
+
+    if (!areDevicesReady) return null
 
     return (
         <main className="grid h-screen grid-cols-[266px_400px] gap-4 overflow-hidden p-2">

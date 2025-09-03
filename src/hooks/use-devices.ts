@@ -1,16 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
-interface Props {
-    onMicChange: (deviceId: string | null) => void
-    onCameraChange: (deviceId: string | null) => void
-}
-
-function useDevices({ onMicChange, onCameraChange }: Props) {
+function useDevices() {
     const [mics, setMics] = useState<MediaDeviceInfo[]>([])
     const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
-
-    const micIdRef = useRef<string | null>(null)
-    const camIdRef = useRef<string | null>(null)
 
     useEffect(() => {
         const pickPreferredPerGroup = (list: MediaDeviceInfo[]) => {
@@ -27,6 +19,7 @@ function useDevices({ onMicChange, onCameraChange }: Props) {
                 const preferred =
                     arr.find((d) => d.deviceId !== "default" && d.deviceId !== "communications") ??
                     arr[0]
+
                 result.push(preferred)
             }
             return result
@@ -43,20 +36,6 @@ function useDevices({ onMicChange, onCameraChange }: Props) {
 
                 setMics(uniqueMics)
                 setCameras(uniqueCameras)
-
-                const prevMicId = micIdRef.current
-                if (prevMicId && uniqueMics.some((d) => d.deviceId === prevMicId)) {
-                    onMicChange?.(prevMicId)
-                } else {
-                    onMicChange?.(null)
-                }
-
-                const prevCamId = camIdRef.current
-                if (prevCamId && uniqueCameras.some((d) => d.deviceId === prevCamId)) {
-                    onCameraChange?.(prevCamId)
-                } else {
-                    onCameraChange?.(null)
-                }
             } catch (error) {
                 console.error(error)
             }
@@ -67,7 +46,7 @@ function useDevices({ onMicChange, onCameraChange }: Props) {
         return () => {
             navigator.mediaDevices.removeEventListener("devicechange", refreshDevices)
         }
-    }, [onCameraChange, onMicChange])
+    }, [])
 
     return { mics, cameras }
 }
