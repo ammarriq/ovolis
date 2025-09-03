@@ -1,4 +1,5 @@
 import type { RecordConfig } from "./types/record-config"
+import type { ScreenSource } from "./types/screen-sources"
 
 import { app, BrowserWindow, ipcMain, screen, shell } from "electron"
 import started from "electron-squirrel-startup"
@@ -99,42 +100,6 @@ const createWindow = () => {
             else mainWindow.maximize()
         }
     })
-
-    // ipcMain.handle("start-recording", () => {
-    //     if (!mainWindow) return
-
-    //     mainWindow.setMinimumSize(223, 64)
-    //     mainWindow.setSize(223, 64)
-
-    //     const win = mainWindow
-    //     const winBounds = win.getBounds()
-    //     // Use the display where the window currently is
-    //     const display = screen.getDisplayMatching(winBounds)
-    //     const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
-
-    //     const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
-    //     const targetY = Math.round(areaY + (areaH - winBounds.height))
-
-    //     win.setPosition(targetX, targetY)
-    // })
-
-    // ipcMain.handle("stop-recording", async () => {
-    //     if (!mainWindow) return
-
-    //     mainWindow.setMinimumSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
-    //     mainWindow.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)
-
-    //     const win = mainWindow
-    //     const winBounds = win.getBounds()
-    //     // Use the display where the window currently is
-    //     const display = screen.getDisplayMatching(winBounds)
-    //     const { x: areaX, y: areaY, width: areaW, height: areaH } = display.workArea
-
-    //     const targetX = Math.round(areaX + (areaW - winBounds.width) / 2)
-    //     const targetY = Math.round(areaY + (areaH - winBounds.height) / 2)
-
-    //     win.setPosition(targetX, targetY)
-    // })
 
     // window manager actions
     ipcMain.handle("get-screen-sources", takeScreenshot)

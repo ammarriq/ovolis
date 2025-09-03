@@ -1,7 +1,10 @@
-import type { RecordConfig } from "~/types/record-config"
+import "@fontsource-variable/noto-sans-lao"
+import "~/index.css"
+
 import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useRef, useState } from "react"
+import { createRoot } from "react-dom/client"
 import { Button } from "react-aria-components"
 
 import AppIcon from "~/assets/icons/icon.png"
@@ -24,11 +27,7 @@ import { MicIcon } from "~/icons/mic"
 import { ScreenIcon } from "~/icons/screen"
 import { VolumeIcon } from "~/icons/volume"
 
-interface Props {
-    onRecord: (config: RecordConfig) => void
-}
-
-function Recorder({ onRecord }: Props) {
+function Recorder() {
     const [modal, setModal] = useState(false)
     const [selectedSource, setSelectedSource] = useState<ScreenSource>()
 
@@ -41,9 +40,6 @@ function Recorder({ onRecord }: Props) {
     const screenSources = useScreenSources()
     const displayMetrics = useDisplayMetrics({ selectedSource })
 
-    // Only use device lists; manage selections locally to avoid auto-resets
-
-    // Auto-select default screen source (prefer entire screen)
     useEffect(() => {
         if (!selectedSource && screenSources.length > 0) {
             const entireScreen =
@@ -54,7 +50,6 @@ function Recorder({ onRecord }: Props) {
         }
     }, [screenSources, selectedSource])
 
-    // Auto-select microphone once, but don't block UI on it
     const didInitMicRef = useRef(false)
     useEffect(() => {
         if (!didInitMicRef.current && mics.length > 0) {
@@ -62,8 +57,6 @@ function Recorder({ onRecord }: Props) {
             didInitMicRef.current = true
         }
     }, [mics])
-
-    // Only show UI after: mounted, screen selected, and devices enumerated at least once
 
     const toggleScreenSelection = () => {
         if (modal) {
@@ -118,9 +111,10 @@ function Recorder({ onRecord }: Props) {
                         <Select
                             aria-label="Select Camera"
                             placeholder="Camera"
-                            selectedKey={selectedCameraId ?? undefined}
+                            selectedKey={selectedCameraId ?? "none"}
                             onSelectionChange={(key) => {
-                                setSelectedCameraId((key as string) || null)
+                                const camera = key !== "none" ? String(key) : null
+                                setSelectedCameraId(camera)
                             }}
                         >
                             <SelectTrigger className="py-1.5">
@@ -130,7 +124,7 @@ function Recorder({ onRecord }: Props) {
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem id="">No Camera</SelectItem>
+                                <SelectItem id="none">No Camera</SelectItem>
                                 {cameras.map((c, idx) => (
                                     <SelectItem
                                         key={c.deviceId}
@@ -146,9 +140,10 @@ function Recorder({ onRecord }: Props) {
                         <Select
                             aria-label="Select Microphone"
                             placeholder="Microphone"
-                            selectedKey={selectedMicId ?? undefined}
+                            selectedKey={selectedMicId ?? "none"}
                             onSelectionChange={(key) => {
-                                setSelectedMicId((key as string) || null)
+                                const mic = key !== "none" ? String(key) : null
+                                setSelectedMicId(mic)
                             }}
                         >
                             <SelectTrigger className="py-1.5">
@@ -158,7 +153,7 @@ function Recorder({ onRecord }: Props) {
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem id="">No Microphone</SelectItem>
+                                <SelectItem id="none">No Microphone</SelectItem>
                                 {mics.map((m, idx) => (
                                     <SelectItem key={m.deviceId} id={m.deviceId}>
                                         {m.label || `Microphone ${idx + 1}`}
@@ -178,15 +173,16 @@ function Recorder({ onRecord }: Props) {
                     </fieldset>
                     <Button
                         className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm"
-                        onPress={() =>
-                            selectedSource &&
-                            onRecord({
-                                source: selectedSource,
-                                selectedMicId,
-                                selectedCameraId,
-                                isSystemSoundEnabled,
-                            })
-                        }
+                        onPress={() => {
+                            if (selectedSource) {
+                                window.electronAPI.createRecordBar({
+                                    source: selectedSource,
+                                    selectedMicId,
+                                    selectedCameraId,
+                                    isSystemSoundEnabled,
+                                })
+                            }
+                        }}
                     >
                         Start Recording
                     </Button>
@@ -206,4 +202,5 @@ function Recorder({ onRecord }: Props) {
     )
 }
 
-export default Recorder
+const root = createRoot(document.body)
+root.render(<Recorder />)

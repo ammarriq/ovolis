@@ -16,6 +16,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 recorder: path.resolve(__dirname, "app.recorder.html"),
+                camera: path.resolve(__dirname, "app.camera.html"),
                 recordBar: path.resolve(__dirname, "app.record-bar.html"),
             },
         },
