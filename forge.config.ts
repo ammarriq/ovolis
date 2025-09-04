@@ -13,7 +13,7 @@ const config: ForgeConfig = {
         asar: true,
         extraResource: [
             "native/build/Release/window_manager.node",
-            // "binaries/ffmpeg.exe",
+            "binaries/ffmpeg.exe",
             // Ensure icons are available at runtime in production
             "src/assets/icons",
         ],
