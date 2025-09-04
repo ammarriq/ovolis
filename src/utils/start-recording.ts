@@ -1,4 +1,4 @@
-import { app, desktopCapturer } from "electron"
+import { app, desktopCapturer, screen } from "electron"
 
 import { writeFile } from "fs/promises"
 import path from "path"
@@ -10,7 +10,8 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
         // Get high-resolution screen source with maximum quality
         const sources = await desktopCapturer.getSources({
             types: ["window", "screen"],
-            thumbnailSize: { width: 1920, height: 1080 }, // 4K resolution thumbnail
+            // Thumbnail not used for sizing; keep minimal
+            thumbnailSize: { width: 0, height: 0 },
             fetchWindowIcons: true,
         })
 
@@ -27,6 +28,21 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
         // Get the user's desktop path for saving recordings
         const desktopPath = path.join(app.getPath("desktop"), "Recrod Recordings")
         const filePath = path.join(desktopPath, filename)
+
+        // Try to force exact pixel dimensions for screen capture.
+        // For window capture, omit width/height so Chromium uses native size.
+        let exactWidth: number | undefined
+        let exactHeight: number | undefined
+
+        if (targetSource.display_id && targetSource.display_id !== "") {
+            const displays = screen.getAllDisplays()
+            const display = displays.find((d) => d.id.toString() === targetSource.display_id)
+            if (display) {
+                // Convert DIP to physical pixels via scaleFactor
+                exactWidth = Math.round(display.size.width * display.scaleFactor)
+                exactHeight = Math.round(display.size.height * display.scaleFactor)
+            }
+        }
 
         // Return recording configuration that will be used by the renderer process
         const recordingConfig = {
@@ -46,11 +62,15 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
                         chromeMediaSource: "desktop",
                         chromeMediaSourceId: targetSource.id,
                         cursor: "always",
-                        // Prefer up to 4K/60 if available, with sensible minimums
-                        minWidth: 1920,
-                        maxWidth: 3840,
-                        minHeight: 1080,
-                        maxHeight: 2160,
+                        // If we know exact screen size, force exact match
+                        ...(exactWidth && exactHeight
+                            ? {
+                                  minWidth: exactWidth,
+                                  maxWidth: exactWidth,
+                                  minHeight: exactHeight,
+                                  maxHeight: exactHeight,
+                              }
+                            : {}),
                         minFrameRate: 30,
                         maxFrameRate: 60,
                         // Keep WebRTC processing minimal for fidelity
@@ -67,6 +87,11 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
 
         console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
         console.log("Recording constraints:", recordingConfig.constraints)
+        if (exactWidth && exactHeight) {
+            console.log("Forcing exact screen dimensions:", { width: exactWidth, height: exactHeight })
+        } else {
+            console.log("Window capture: using source's native size (no scaling).")
+        }
         console.log("✅ Targeting up to 4K@60 if available; will fall back gracefully.")
         console.log("Source info:", {
             id: targetSource.id,
