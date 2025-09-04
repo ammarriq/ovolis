@@ -6,13 +6,13 @@ import path from "path"
 
 export function createCamera(cameraId: RecordConfig["selectedCameraId"]): BrowserWindow {
     // Desired window size
-    const windowWidth = 223
-    const windowHeight = 64
+    const windowWidth = 224
+    const windowHeight = 224
 
     // Calculate bottom-center position on the primary display's work area
     const { workArea } = screen.getPrimaryDisplay()
     const margin = 12 // small offset from the very bottom
-    const x = Math.round(workArea.x + (workArea.width - windowWidth) / 2)
+    const x = Math.round(workArea.x + (workArea.width - windowWidth) - margin)
     const y = Math.round(workArea.y + workArea.height - windowHeight - margin)
 
     const cameraWindow = new BrowserWindow({

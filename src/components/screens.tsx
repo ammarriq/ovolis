@@ -2,7 +2,7 @@ import type { ScreenSource } from "~/types/screen-sources"
 
 import { useState } from "react"
 
-import useLiveScreen from "~/hooks/use-live-screen"
+import useLiveVideo from "~/hooks/use-live-video"
 import { ArrowLeftIcon } from "~/icons/arrow-left"
 import { CloseIcon } from "~/icons/close"
 
@@ -105,7 +105,7 @@ function Screens({
         PRESETS_1_1,
     )
 
-    const { videoRef } = useLiveScreen({ selectedScreen })
+    const { videoRef } = useLiveVideo({ screenId: selectedScreen?.id })
     const [isScreenOpen, setIsScreenOpen] = useState(false)
 
     const handleResize = async (width: number, height: number) => {

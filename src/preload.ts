@@ -62,6 +62,24 @@ contextBridge.exposeInMainWorld("electronAPI", {
     // FFmpeg APIs removed; recordings are saved directly as mp4
 } satisfies Window["electronAPI"])
 
+// Bridge main-process IPC to renderer DOM event for camera overlay window
+ipcRenderer.on("camera:selected", (_evt, cameraId: string) => {
+    window.dispatchEvent(
+        new CustomEvent("camera-selected", {
+            detail: { cameraId },
+        }),
+    )
+})
+
+// Keep compatibility with potential record bar flow
+ipcRenderer.on("record-bar:camera-selected", (_evt, cameraId: string) => {
+    window.dispatchEvent(
+        new CustomEvent("camera-selected", {
+            detail: { cameraId },
+        }),
+    )
+})
+
 // Bridge main-process IPC to renderer DOM event for floating bar initialization
 ipcRenderer.on("record-bar:config-selected", (_evt, config: RecordConfig) => {
     window.dispatchEvent(
@@ -70,3 +88,4 @@ ipcRenderer.on("record-bar:config-selected", (_evt, config: RecordConfig) => {
         }),
     )
 })
+

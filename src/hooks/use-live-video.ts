@@ -1,9 +1,8 @@
-import type { ScreenSource } from "~/types/screen-sources"
+import { useEffect, useMemo, useRef } from "react"
 
-import { useEffect, useRef } from "react"
-
-interface Props {
-    selectedScreen: ScreenSource | null
+type Props = {
+    screenId?: string | null
+    cameraId?: string | null
 }
 
 interface ChromeDesktopVideoConstraints extends MediaTrackConstraints {
@@ -13,11 +12,32 @@ interface ChromeDesktopVideoConstraints extends MediaTrackConstraints {
     }
 }
 
-function useLiveScreen({ selectedScreen }: Props) {
+function useLiveVideo({ screenId, cameraId }: Props) {
     const videoRef = useRef<HTMLVideoElement>(null)
 
+    const constraints = useMemo(() => {
+        if (!cameraId && !screenId) return
+
+        if (screenId) {
+            return {
+                audio: false,
+                video: {
+                    mandatory: {
+                        chromeMediaSource: "desktop",
+                        chromeMediaSourceId: screenId,
+                    },
+                } as ChromeDesktopVideoConstraints,
+            }
+        }
+
+        return {
+            audio: false,
+            video: { deviceId: { exact: cameraId } },
+        }
+    }, [cameraId, screenId])
+
     useEffect(() => {
-        if (!selectedScreen) return
+        if (!constraints) return
 
         let stopped = false
         let localStream: MediaStream | null = null
@@ -25,16 +45,6 @@ function useLiveScreen({ selectedScreen }: Props) {
 
         const startPreview = async () => {
             try {
-                const constraints: MediaStreamConstraints = {
-                    audio: false,
-                    video: {
-                        mandatory: {
-                            chromeMediaSource: "desktop",
-                            chromeMediaSourceId: selectedScreen.id,
-                        },
-                    } as ChromeDesktopVideoConstraints,
-                }
-
                 const stream = await navigator.mediaDevices.getUserMedia(constraints)
 
                 if (stopped) {
@@ -71,9 +81,9 @@ function useLiveScreen({ selectedScreen }: Props) {
                 localStream.getTracks().forEach((t) => t.stop())
             }
         }
-    }, [selectedScreen])
+    }, [constraints])
 
     return { videoRef }
 }
 
-export default useLiveScreen
+export default useLiveVideo
