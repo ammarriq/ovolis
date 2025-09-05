@@ -97,6 +97,10 @@ const createWindow = () => {
         if (mainWindow) mainWindow.close()
     })
 
+    ipcMain.handle("close-camera", () => {
+        if (cameraWindow) cameraWindow.close()
+    })
+
     ipcMain.handle("window-minimize", () => {
         if (mainWindow) mainWindow.minimize()
     })

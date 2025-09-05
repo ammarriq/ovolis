@@ -3,12 +3,17 @@ import "~/index.css"
 
 import { useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
+import { Button } from "react-aria-components"
 
 import useDevices from "~/hooks/use-devices"
 import useLiveVideo from "~/hooks/use-live-video"
+import { CircleIcon } from "~/icons/circle"
+import { CloseIcon } from "~/icons/close"
+import { SquareIcon } from "~/icons/square"
 
 function Camera() {
     const [_cameraId, setCameraId] = useState<string | null>(null)
+    const [isCircle, setIsCircle] = useState(false)
 
     const { cameras } = useDevices()
     const { videoRef } = useLiveVideo({
@@ -28,17 +33,47 @@ function Camera() {
     }, [])
 
     return (
-        <main className="h-screen w-screen" style={{ WebkitAppRegion: "drag" }}>
-            <div className="size-full overflow-hidden rounded-full bg-black">
+        <main className="shadow-cursor relative flex h-screen w-screen flex-col items-center justify-between p-2">
+            <div
+                className="shadow-cursor flex max-w-max items-center gap-1 rounded-md bg-white p-1"
+                style={{ WebkitAppRegion: "no-drag" }}
+            >
+                <Button
+                    className="rounded-md p-1 hover:bg-[#F3F4F6]"
+                    onPress={() => setIsCircle(false)}
+                >
+                    <SquareIcon className="size-4.5" />
+                </Button>
+
+                <Button
+                    className="rounded-md p-1 hover:bg-[#F3F4F6]"
+                    onPress={() => setIsCircle(true)}
+                >
+                    <CircleIcon className="size-4.5" />
+                </Button>
+
+                <Button
+                    className="rounded-md p-1 hover:bg-[#F3F4F6]"
+                    onPress={() => window.electronAPI.closeCamera()}
+                >
+                    <CloseIcon strokeWidth={2} className="size-4.5" />
+                </Button>
+            </div>
+
+            <div
+                className="size-50 overflow-hidden bg-black duration-300 ease-in-out will-change-[border-radius]"
+                style={{ borderRadius: isCircle ? "50%" : "1.5rem" }}
+            >
                 <video
+                    style={{ WebkitAppRegion: "drag" }}
                     ref={videoRef}
-                    className="size-full object-cover"
+                    // Inherit border radius so hardware-accelerated video also clips/animates
+                    className="size-full [border-radius:inherit] object-cover"
                     autoPlay
                     muted
                     playsInline
                 />
             </div>
-            <div className="fixed bottom-0 left-1/2 w-40 -translate-x-1/2 rounded-sm bg-white p-1"></div>
         </main>
     )
 }

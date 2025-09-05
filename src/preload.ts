@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     minimizeWindow: () => ipcRenderer.invoke("window-minimize"),
     maximizeWindow: () => ipcRenderer.invoke("window-maximize"),
     closeWindow: () => ipcRenderer.invoke("window-close"),
+    closeCamera: () => ipcRenderer.invoke("close-camera"),
     startRecording: (source: { id: string; name: string }) =>
         ipcRenderer.invoke("start-recording", source),
     stopRecording: () => ipcRenderer.invoke("stop-recording"),
@@ -88,4 +89,3 @@ ipcRenderer.on("record-bar:config-selected", (_evt, config: RecordConfig) => {
         }),
     )
 })
-
