@@ -35,6 +35,63 @@ function Camera() {
         }
     }, [])
 
+    // Report the actual video element size and border radius to main
+    useEffect(() => {
+        let ro: ResizeObserver | null = null
+        let rafId: number | null = null
+
+        const report = async () => {
+            const videoEl = videoRef.current
+            if (!videoEl) return
+
+            const rect = videoEl.getBoundingClientRect()
+            const dpr = window.devicePixelRatio || 1
+
+            // Radius in CSS px: if circle, half the min dimension; else 24px (1.5rem)
+            const radiusPx = isCircle ? Math.min(rect.width, rect.height) / 2 : 24
+
+            try {
+                const bounds = await window.electronAPI.getCurrentWindowBounds?.()
+                window.electronAPI.updateCameraMetrics?.({
+                    x: bounds?.x ?? 0,
+                    y: bounds?.y ?? 0,
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                    radiusPx: Math.round(radiusPx),
+                    dpr,
+                    windowWidth: bounds?.width ?? Math.round(window.innerWidth),
+                    windowHeight: bounds?.height ?? Math.round(window.innerHeight),
+                })
+            } catch {
+                // ignore
+            }
+        }
+
+        // Observe element size changes
+        if (videoRef.current) {
+            ro = new ResizeObserver(() => {
+                if (rafId) cancelAnimationFrame(rafId)
+                rafId = requestAnimationFrame(report)
+            })
+            ro.observe(videoRef.current)
+        }
+
+        // Also report on mount and when radius state changes
+        report()
+
+        const onResize = () => {
+            if (rafId) cancelAnimationFrame(rafId)
+            rafId = requestAnimationFrame(report)
+        }
+        window.addEventListener("resize", onResize)
+
+        return () => {
+            if (ro) ro.disconnect()
+            if (rafId) cancelAnimationFrame(rafId)
+            window.removeEventListener("resize", onResize)
+        }
+    }, [isCircle, videoRef])
+
     // Implement native dragging without -webkit-app-region
     useEffect(() => {
         const el = containerRef.current

@@ -55,6 +55,18 @@ function getIconPath(): string {
 let mainWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
 let cameraWindow: BrowserWindow | null = null
+let latestCameraMetrics:
+    | {
+          x: number
+          y: number
+          width: number
+          height: number
+          radiusPx: number
+          dpr: number
+          windowWidth: number
+          windowHeight: number
+      }
+    | null = null
 
 // Global cursor/window helpers available to any renderer
 ipcMain.handle("get-cursor-point", () => {
@@ -211,6 +223,27 @@ const createWindow = () => {
             return null
         }
     })
+
+    // Camera overlay metrics: camera window reports, others can query
+    ipcMain.on(
+        "camera:update-metrics",
+        (
+            _evt,
+            metrics: {
+                x: number
+                y: number
+                width: number
+                height: number
+                radiusPx: number
+                dpr: number
+                windowWidth: number
+                windowHeight: number
+            },
+        ) => {
+            latestCameraMetrics = metrics
+        },
+    )
+    ipcMain.handle("get-camera-metrics", () => latestCameraMetrics)
 
     // recording options
     ipcMain.handle("start-recording", (_, source: Pick<ScreenSource, "id" | "name">) => {

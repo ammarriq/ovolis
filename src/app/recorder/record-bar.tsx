@@ -51,6 +51,7 @@ const FloatingBar = ({
     const filePathRef = useRef<string | null>(null)
     const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
     const streamingEnabledRef = useRef<boolean>(false)
+    const closedCameraForRecordingRef = useRef<boolean>(false)
 
     useEffect(() => {
         if (isRecording && !isPaused) {
@@ -288,20 +289,25 @@ const FloatingBar = ({
             let camVideoEl: HTMLVideoElement | null = null
             if (selectedCameraId) {
                 try {
-                    const cameraSourceId = await window.electronAPI.getCameraWindowSourceId()
-                    if (cameraSourceId) {
-                        // Capture the camera overlay window to avoid opening the webcam twice
-                        camStream = await navigator.mediaDevices.getUserMedia({
-                            audio: false,
-                            video: {
-                                mandatory: {
-                                    chromeMediaSource: "desktop",
-                                    chromeMediaSourceId: cameraSourceId,
-                                },
-                            } as MediaTrackConstraints,
-                        })
-                    } else {
-                        // Fallback: capture device directly at modest resolution/fps
+                    // Keep camera window visible. Prefer capturing the camera window; fallback to device.
+                    let captured = false
+                    try {
+                        const cameraSourceId = await window.electronAPI.getCameraWindowSourceId?.()
+                        if (cameraSourceId) {
+                            camStream = await navigator.mediaDevices.getUserMedia({
+                                audio: false,
+                                video: {
+                                    mandatory: {
+                                        chromeMediaSource: "desktop",
+                                        chromeMediaSourceId: cameraSourceId,
+                                    },
+                                } as unknown,
+                            })
+                            captured = true
+                        }
+                    } catch {}
+
+                    if (!captured) {
                         camStream = await navigator.mediaDevices.getUserMedia({
                             video: {
                                 deviceId: { exact: selectedCameraId },
@@ -312,6 +318,7 @@ const FloatingBar = ({
                             audio: false,
                         })
                     }
+
                     camVideoEl = document.createElement("video")
                     camVideoEl.muted = true
                     camVideoEl.playsInline = true
@@ -325,36 +332,93 @@ const FloatingBar = ({
                 }
             }
 
-            const roundRect = (
-                c: CanvasRenderingContext2D,
-                x: number,
-                y: number,
-                w: number,
-                h: number,
-                r: number,
-            ) => {
-                const radius = Math.min(r, w / 2, h / 2)
-                c.beginPath()
-                c.moveTo(x + radius, y)
-                c.lineTo(x + w - radius, y)
-                c.quadraticCurveTo(x + w, y, x + w, y + radius)
-                c.lineTo(x + w, y + h - radius)
-                c.quadraticCurveTo(x + w, y + h, x + w - radius, y + h)
-                c.lineTo(x + radius, y + h)
-                c.quadraticCurveTo(x, y + h, x, y + h - radius)
-                c.lineTo(x, y + radius)
-                c.quadraticCurveTo(x, y, x + radius, y)
-                c.closePath()
+            const padding = 24 // px
+            // Match camera.tsx base size (size-50 ≈ 200px)
+            let overlayW = 200
+            let overlayH = 200
+            let overlayRadiusPx = 24 // default ~1.5rem
+
+            try {
+                const metrics = await window.electronAPI.getCameraMetrics?.()
+                if (metrics) {
+                    const scale = metrics.dpr || 1
+                    const w = Math.max(1, Math.round(metrics.width * scale))
+                    const h = Math.max(1, Math.round(metrics.height * scale))
+                    const r = Math.max(0, Math.round(metrics.radiusPx * scale))
+                    if (w >= 16 && h >= 16) {
+                        overlayW = w
+                        overlayH = h
+                        overlayRadiusPx = Math.min(r, Math.floor(Math.min(w, h) / 2))
+                    }
+                }
+            } catch {
+                // ignore and use defaults
             }
 
-            const padding = 24 // px
-            // Match camera.tsx base size (size-50 Ã¢â€°Ë† 200px)
-            const overlayW = 200
-            const overlayH = 200
-            // Default radius ~1.5rem (24px) to match camera.tsx default square with rounded corners
-            const overlayRadiusPx = 24
+            // Periodically refresh overlay metrics so recording matches visible camera changes
+            let metricsInterval: number | null = null
+            const refreshOverlayMetrics = async () => {
+                try {
+                    const m = await window.electronAPI.getCameraMetrics?.()
+                    if (!m) return
+                    const scale = m.dpr || 1
+                    const w = Math.max(1, Math.round(m.width * scale))
+                    const h = Math.max(1, Math.round(m.height * scale))
+                    const r = Math.max(0, Math.round(m.radiusPx * scale))
+                    if (w >= 16 && h >= 16) {
+                        overlayW = w
+                        overlayH = h
+                        overlayRadiusPx = Math.min(r, Math.floor(Math.min(w, h) / 2))
+                    }
+                } catch {}
+            }
+            metricsInterval = window.setInterval(refreshOverlayMetrics, 500)
 
-            const targetMs = 1000 / Math.min(30, Math.max(1, compFps))
+            // Cache overlay geometry/clip path for better performance
+            let clipPath: Path2D | null = null
+            let lastOverlayW = overlayW
+            let lastOverlayH = overlayH
+            let lastRadius = overlayRadiusPx
+            let lastVW = 0
+            let lastVH = 0
+            let drawDX = 0
+            let drawDY = 0
+            let drawDW = overlayW
+            let drawDH = overlayH
+
+            const updateGeometry = () => {
+                const x = canvasWidth - overlayW - padding
+                const y = canvasHeight - overlayH - padding
+                const p = new Path2D()
+                const r = Math.min(overlayRadiusPx, overlayW / 2, overlayH / 2)
+                p.moveTo(x + r, y)
+                p.lineTo(x + overlayW - r, y)
+                p.quadraticCurveTo(x + overlayW, y, x + overlayW, y + r)
+                p.lineTo(x + overlayW, y + overlayH - r)
+                p.quadraticCurveTo(x + overlayW, y + overlayH, x + overlayW - r, y + overlayH)
+                p.lineTo(x + r, y + overlayH)
+                p.quadraticCurveTo(x, y + overlayH, x, y + overlayH - r)
+                p.lineTo(x, y + r)
+                p.quadraticCurveTo(x, y, x + r, y)
+                p.closePath()
+                clipPath = p
+
+                const vw = camVideoEl?.videoWidth || overlayW
+                const vh = camVideoEl?.videoHeight || overlayH
+                const scale = Math.max(overlayW / vw, overlayH / vh)
+                drawDW = vw * scale
+                drawDH = vh * scale
+                drawDX = x + (overlayW - drawDW) / 2
+                drawDY = y + (overlayH - drawDH) / 2
+
+                lastOverlayW = overlayW
+                lastOverlayH = overlayH
+                lastRadius = overlayRadiusPx
+                lastVW = vw
+                lastVH = vh
+            }
+
+            const targetMs = 1000 / Math.min(24, Math.max(1, compFps))
             let lastDraw = 0
 
             const doDraw = (now: number) => {
@@ -365,20 +429,23 @@ const FloatingBar = ({
                     ctx.drawImage(screenVideoEl, 0, 0, canvasWidth, canvasHeight)
                 } catch {}
                 if (camVideoEl) {
-                    const x = canvasWidth - overlayW - padding
-                    const y = canvasHeight - overlayH - padding
-                    ctx.save()
-                    roundRect(ctx, x, y, overlayW, overlayH, overlayRadiusPx)
-                    ctx.clip()
+                    // Refresh cached geometry if anything changed
                     const vw = camVideoEl.videoWidth || overlayW
                     const vh = camVideoEl.videoHeight || overlayH
-                    const scale = Math.max(overlayW / vw, overlayH / vh)
-                    const dw = vw * scale
-                    const dh = vh * scale
-                    const dx = x + (overlayW - dw) / 2
-                    const dy = y + (overlayH - dh) / 2
+                    if (
+                        !clipPath ||
+                        overlayW !== lastOverlayW ||
+                        overlayH !== lastOverlayH ||
+                        overlayRadiusPx !== lastRadius ||
+                        vw !== lastVW ||
+                        vh !== lastVH
+                    ) {
+                        updateGeometry()
+                    }
+                    ctx.save()
+                    if (clipPath) ctx.clip(clipPath)
                     try {
-                        ctx.drawImage(camVideoEl, dx, dy, dw, dh)
+                        ctx.drawImage(camVideoEl, drawDX, drawDY, drawDW, drawDH)
                     } catch {}
                     ctx.restore()
                 }
@@ -492,6 +559,12 @@ const FloatingBar = ({
                 cleanupStreams()
 
                 try {
+                    try {
+                        if (metricsInterval !== null) {
+                            clearInterval(metricsInterval)
+                            metricsInterval = null
+                        }
+                    } catch {}
                     if (streamingEnabledRef.current && filePathRef.current) {
                         await writeQueueRef.current
                         await window.electronAPI.closeRecordingStream(filePathRef.current)
@@ -502,7 +575,7 @@ const FloatingBar = ({
                 } finally {
                     streamingEnabledRef.current = false
                 }
-                alert("Ã¯Â¿Â½?O Recording error occurred. This may be due to capture issues.")
+                alert("�?O Recording error occurred. This may be due to capture issues.")
             }
 
             mediaRecorder.onstop = async () => {
@@ -512,7 +585,7 @@ const FloatingBar = ({
                         const finalPath = await window.electronAPI.finalizeRecordingStream(
                             filePathRef.current,
                         )
-                        alert(`Ã¯Â¿Â½o. Recording saved: ${finalPath}`)
+                        alert(`�o. Recording saved: ${finalPath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(finalPath)
                         }
@@ -528,15 +601,29 @@ const FloatingBar = ({
                             uint8,
                         )
                         console.log(msg)
-                        alert(`Ã¯Â¿Â½o. Recording saved: ${recordingConfig.filePath}`)
+                        alert(`�o. Recording saved: ${recordingConfig.filePath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(recordingConfig.filePath)
                         }
                     }
                 } catch (err) {
                     console.error("Save recording error:", err)
-                    alert(`Ã¯Â¿Â½?O Failed to save recording: ${err}`)
+                    alert(`�?O Failed to save recording: ${err}`)
                 } finally {
+                    try {
+                        if (metricsInterval !== null) {
+                            clearInterval(metricsInterval)
+                            metricsInterval = null
+                        }
+                    } catch {}
+                    // Re-open the camera overlay window if we closed it for recording
+                    try {
+                        if (closedCameraForRecordingRef.current && selectedCameraId) {
+                            await window.electronAPI.openCamera(selectedCameraId)
+                        }
+                    } catch {}
+                    closedCameraForRecordingRef.current = false
+
                     setIsRecording(false)
                     setIsPaused(false)
                     setRecordingTime(0)
@@ -565,15 +652,13 @@ const FloatingBar = ({
             setRecordingTime(0)
             setIsStartingRecording(false)
 
-            console.log(`Ã¯Â¿Â½o. Recording started for: ${source.name}`)
-            console.log(
-                "Ã¯Â¿Â½o. OPTIMIZED: Using 500ms data collection interval for smooth cursor!",
-            )
+            console.log(`�o. Recording started for: ${source.name}`)
+            console.log("�o. OPTIMIZED: Using 500ms data collection interval for smooth cursor!")
         } catch (error) {
             console.error("Error starting recording:", error)
             setIsStartingRecording(false)
             alert(
-                `Ã¯Â¿Â½?O Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
+                `�?O Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
             )
         }
     }

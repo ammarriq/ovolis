@@ -31,6 +31,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getCameraWindowSourceId: () => {
         return ipcRenderer.invoke("get-camera-source-id")
     },
+    // Camera overlay metrics
+    updateCameraMetrics: (metrics: {
+        x: number
+        y: number
+        width: number
+        height: number
+        radiusPx: number
+        dpr: number
+        windowWidth: number
+        windowHeight: number
+    }) => ipcRenderer.send("camera:update-metrics", metrics),
+    getCameraMetrics: () => ipcRenderer.invoke("get-camera-metrics"),
 
     // startRecording: (source: { id: string; name: string }) => {
     //     return ipcRenderer.invoke("start-recording", source)

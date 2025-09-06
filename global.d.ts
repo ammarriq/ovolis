@@ -24,6 +24,30 @@ declare global {
             }) => Promise<void>
             focusWindow: (windowTitle: string) => Promise<string>
             getCameraWindowSourceId: () => Promise<string | null>
+            // Camera overlay composition helpers
+            updateCameraMetrics: (metrics: {
+                x: number
+                y: number
+                width: number
+                height: number
+                radiusPx: number
+                dpr: number
+                windowWidth: number
+                windowHeight: number
+            }) => void
+            getCameraMetrics: () => Promise<
+                | {
+                      x: number
+                      y: number
+                      width: number
+                      height: number
+                      radiusPx: number
+                      dpr: number
+                      windowWidth: number
+                      windowHeight: number
+                  }
+                | null
+            >
             startRecording: (source: { id: string; name: string }) => Promise<string>
             saveRecording: (filePath: string, buffer: Uint8Array) => Promise<string>
             openRecordingStream: (filePath: string) => Promise<string>
