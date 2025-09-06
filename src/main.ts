@@ -6,7 +6,7 @@ import started from "electron-squirrel-startup"
 
 import path from "path"
 
-import { createCamera } from "./utils/camera"
+// import { createCamera } from "./utils/camera"
 import { fixMp4Metadata } from "./utils/ffmpeg-post"
 import { createRecordBar } from "./utils/record-bar"
 import {
@@ -54,7 +54,7 @@ function getIconPath(): string {
 // Global window references
 let mainWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
-let cameraWindow: BrowserWindow | null = null
+// let cameraWindow: BrowserWindow | null = null
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -75,10 +75,10 @@ const createWindow = () => {
         icon: getIconPath(),
     })
 
-    cameraWindow = createCamera("camera")
-    cameraWindow.webContents.openDevTools({
-        mode: "undocked",
-    })
+    // cameraWindow = createCamera("camera")
+    // cameraWindow.webContents.openDevTools({
+    //     mode: "undocked",
+    // })
 
     mainWindow.setMenuBarVisibility(false)
 
@@ -97,9 +97,9 @@ const createWindow = () => {
         if (mainWindow) mainWindow.close()
     })
 
-    ipcMain.handle("close-camera", () => {
-        if (cameraWindow) cameraWindow.close()
-    })
+    // ipcMain.handle("close-camera", () => {
+    //     if (cameraWindow) cameraWindow.close()
+    // })
 
     ipcMain.handle("window-minimize", () => {
         if (mainWindow) mainWindow.minimize()

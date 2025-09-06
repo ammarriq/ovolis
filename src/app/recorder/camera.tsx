@@ -67,7 +67,6 @@ function Camera() {
                 <video
                     style={{ WebkitAppRegion: "drag" }}
                     ref={videoRef}
-                    // Inherit border radius so hardware-accelerated video also clips/animates
                     className="size-full [border-radius:inherit] object-cover"
                     autoPlay
                     muted

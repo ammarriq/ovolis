@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react"
 type Props = {
     screenId?: string | null
     cameraId?: string | null
+    disabled?: boolean
 }
 
 interface ChromeDesktopVideoConstraints extends MediaTrackConstraints {
@@ -12,10 +13,11 @@ interface ChromeDesktopVideoConstraints extends MediaTrackConstraints {
     }
 }
 
-function useLiveVideo({ screenId, cameraId }: Props) {
+function useLiveVideo({ screenId, cameraId, disabled = false }: Props) {
     const videoRef = useRef<HTMLVideoElement>(null)
 
     const constraints = useMemo(() => {
+        if (disabled) return
         if (!cameraId && !screenId) return
 
         if (screenId) {
@@ -34,7 +36,7 @@ function useLiveVideo({ screenId, cameraId }: Props) {
             audio: false,
             video: { deviceId: { exact: cameraId } },
         }
-    }, [cameraId, screenId])
+    }, [cameraId, screenId, disabled])
 
     useEffect(() => {
         if (!constraints) return

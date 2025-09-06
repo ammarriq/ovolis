@@ -105,8 +105,11 @@ function Screens({
         PRESETS_1_1,
     )
 
-    const { videoRef } = useLiveVideo({ screenId: selectedScreen?.id })
     const [isScreenOpen, setIsScreenOpen] = useState(false)
+    const { videoRef } = useLiveVideo({
+        screenId: selectedScreen?.id,
+        disabled: !isScreenOpen,
+    })
 
     const handleResize = async (width: number, height: number) => {
         if (!selectedScreen) return
