@@ -348,7 +348,7 @@ const FloatingBar = ({
             }
 
             const padding = 24 // px
-            // Match camera.tsx base size (size-50 ≈ 200px)
+            // Match camera.tsx base size (size-50 Ã¢â€°Ë† 200px)
             const overlayW = 200
             const overlayH = 200
             // Default radius ~1.5rem (24px) to match camera.tsx default square with rounded corners
@@ -502,7 +502,7 @@ const FloatingBar = ({
                 } finally {
                     streamingEnabledRef.current = false
                 }
-                alert("�?O Recording error occurred. This may be due to capture issues.")
+                alert("Ã¯Â¿Â½?O Recording error occurred. This may be due to capture issues.")
             }
 
             mediaRecorder.onstop = async () => {
@@ -512,7 +512,7 @@ const FloatingBar = ({
                         const finalPath = await window.electronAPI.finalizeRecordingStream(
                             filePathRef.current,
                         )
-                        alert(`�o. Recording saved: ${finalPath}`)
+                        alert(`Ã¯Â¿Â½o. Recording saved: ${finalPath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(finalPath)
                         }
@@ -528,14 +528,14 @@ const FloatingBar = ({
                             uint8,
                         )
                         console.log(msg)
-                        alert(`�o. Recording saved: ${recordingConfig.filePath}`)
+                        alert(`Ã¯Â¿Â½o. Recording saved: ${recordingConfig.filePath}`)
                         if (window.electronAPI.openFolder) {
                             window.electronAPI.openFolder(recordingConfig.filePath)
                         }
                     }
                 } catch (err) {
                     console.error("Save recording error:", err)
-                    alert(`�?O Failed to save recording: ${err}`)
+                    alert(`Ã¯Â¿Â½?O Failed to save recording: ${err}`)
                 } finally {
                     setIsRecording(false)
                     setIsPaused(false)
@@ -565,13 +565,15 @@ const FloatingBar = ({
             setRecordingTime(0)
             setIsStartingRecording(false)
 
-            console.log(`�o. Recording started for: ${source.name}`)
-            console.log("�o. OPTIMIZED: Using 500ms data collection interval for smooth cursor!")
+            console.log(`Ã¯Â¿Â½o. Recording started for: ${source.name}`)
+            console.log(
+                "Ã¯Â¿Â½o. OPTIMIZED: Using 500ms data collection interval for smooth cursor!",
+            )
         } catch (error) {
             console.error("Error starting recording:", error)
             setIsStartingRecording(false)
             alert(
-                `�?O Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
+                `Ã¯Â¿Â½?O Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
             )
         }
     }

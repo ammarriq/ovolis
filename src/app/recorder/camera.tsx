@@ -91,7 +91,7 @@ function Camera() {
     return (
         <main className="shadow-cursor group relative flex h-screen w-screen flex-col items-center justify-between p-2">
             <div
-                className="shadow-cursor fixed top-2 left-1/2 hidden max-w-max -translate-x-1/2 items-center gap-1 rounded-md bg-white p-1 group-hover:flex"
+                className="shadow-cursor fixed bottom-4 left-1/2 z-50 hidden max-w-max -translate-x-1/2 items-center gap-1 rounded-md bg-white p-1 group-hover:flex"
                 data-no-drag="true"
             >
                 <Button
@@ -118,7 +118,7 @@ function Camera() {
 
             <div
                 ref={containerRef}
-                className="mt-11 size-50 overflow-hidden duration-300 ease-in-out will-change-[border-radius]"
+                className="size-54 overflow-hidden duration-300 ease-in-out will-change-[border-radius]"
                 style={{ borderRadius: isCircle ? "50%" : "1.5rem" }}
             >
                 <video
