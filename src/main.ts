@@ -56,6 +56,20 @@ let mainWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
 let cameraWindow: BrowserWindow | null = null
 
+// Global cursor/window helpers available to any renderer
+ipcMain.handle("get-cursor-point", () => {
+    return screen.getCursorScreenPoint()
+})
+ipcMain.handle("get-current-window-bounds", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win?.getBounds()
+})
+ipcMain.handle("set-current-window-position", (event, x: number, y: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win || win.isDestroyed()) return
+    win.setPosition(Math.round(x), Math.round(y))
+})
+
 const createWindow = () => {
     mainWindow = new BrowserWindow({
         width: DEFAULT_WIDTH,

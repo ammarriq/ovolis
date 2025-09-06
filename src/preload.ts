@@ -64,6 +64,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("close-record-bar")
     },
 
+    // Cursor/window helpers for native dragging without app-region
+    getCursorPoint: () => ipcRenderer.invoke("get-cursor-point"),
+    getCurrentWindowBounds: () => ipcRenderer.invoke("get-current-window-bounds"),
+    setCurrentWindowPosition: (x: number, y: number) =>
+        ipcRenderer.invoke("set-current-window-position", x, y),
+
     // FFmpeg APIs removed; recordings are saved directly as mp4
 } satisfies Window["electronAPI"])
 

@@ -35,6 +35,14 @@ declare global {
 
             createRecordBar: (config: RecordConfig) => Promise<void>
             closeRecordBar: () => Promise<void>
+
+            // Cursor/window helpers for native window dragging
+            getCursorPoint: () => Promise<{ x: number; y: number }>
+            getCurrentWindowBounds: () => Promise<
+                | { x: number; y: number; width: number; height: number }
+                | undefined
+            >
+            setCurrentWindowPosition: (x: number, y: number) => Promise<void>
         }
     }
 }
