@@ -7,13 +7,13 @@ import { Button } from "react-aria-components"
 
 import useDevices from "~/hooks/use-devices"
 import useLiveVideo from "~/hooks/use-live-video"
-import { CircleIcon } from "~/icons/circle"
+// import { CircleIcon } from "~/icons/circle"
 import { CloseIcon } from "~/icons/close"
-import { SquareIcon } from "~/icons/square"
+// import { SquareIcon } from "~/icons/square"
 
 function Camera() {
     const [cameraId, setCameraId] = useState<string | null>(null)
-    const [isCircle, setIsCircle] = useState(false)
+    const [isCircle, _setIsCircle] = useState(false)
     const containerRef = useRef<HTMLDivElement | null>(null)
     const draggingRef = useRef(false)
     const dragOffsetRef = useRef<{ x: number; y: number } | null>(null)
@@ -155,19 +155,19 @@ function Camera() {
                 className="shadow-cursor fixed bottom-4 left-1/2 z-50 hidden max-w-max -translate-x-1/2 items-center gap-1 rounded-md bg-white p-1 group-hover:flex"
                 data-no-drag="true"
             >
-                <Button
+                {/* <Button
                     className="rounded-md p-1 hover:bg-[#F3F4F6]"
                     onPress={() => setIsCircle(false)}
                 >
                     <SquareIcon className="size-4.5" />
-                </Button>
+                </Button> */}
 
-                <Button
+                {/* <Button
                     className="rounded-md p-1 hover:bg-[#F3F4F6]"
                     onPress={() => setIsCircle(true)}
                 >
                     <CircleIcon className="size-4.5" />
-                </Button>
+                </Button> */}
 
                 <Button
                     className="rounded-md p-1 hover:bg-[#F3F4F6]"
