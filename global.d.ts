@@ -10,6 +10,7 @@ declare global {
             maximizeWindow: () => Promise<void>
             closeWindow: () => Promise<void>
             closeCamera: () => Promise<void>
+            openCamera: (cameraId?: string) => Promise<void>
             stopRecording: () => Promise<void>
 
             getScreenSources: () => Promise<ScreenSource[]>

@@ -12,12 +12,12 @@ import { CloseIcon } from "~/icons/close"
 import { SquareIcon } from "~/icons/square"
 
 function Camera() {
-    const [_cameraId, setCameraId] = useState<string | null>(null)
+    const [cameraId, setCameraId] = useState<string | null>(null)
     const [isCircle, setIsCircle] = useState(false)
 
     const { cameras } = useDevices()
     const { videoRef } = useLiveVideo({
-        cameraId: cameras[0]?.deviceId,
+        cameraId: cameraId ?? cameras[0]?.deviceId ?? null,
     })
 
     useEffect(() => {
@@ -61,13 +61,13 @@ function Camera() {
             </div>
 
             <div
-                className="size-50 overflow-hidden bg-black duration-300 ease-in-out will-change-[border-radius]"
+                className="size-50 overflow-hidden duration-300 ease-in-out will-change-[border-radius]"
                 style={{ borderRadius: isCircle ? "50%" : "1.5rem" }}
             >
                 <video
                     style={{ WebkitAppRegion: "drag" }}
                     ref={videoRef}
-                    className="size-full [border-radius:inherit] object-cover"
+                    className="size-full [border-radius:inherit] bg-black object-cover"
                     autoPlay
                     muted
                     playsInline

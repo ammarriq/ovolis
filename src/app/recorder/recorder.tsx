@@ -115,6 +115,11 @@ function Recorder() {
                             onSelectionChange={(key) => {
                                 const camera = key !== "none" ? String(key) : null
                                 setSelectedCameraId(camera)
+                                if (camera) {
+                                    window.electronAPI.openCamera(camera)
+                                } else {
+                                    window.electronAPI.closeCamera()
+                                }
                             }}
                         >
                             <SelectTrigger className="py-1.5">

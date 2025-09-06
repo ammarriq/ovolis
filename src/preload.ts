@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     maximizeWindow: () => ipcRenderer.invoke("window-maximize"),
     closeWindow: () => ipcRenderer.invoke("window-close"),
     closeCamera: () => ipcRenderer.invoke("close-camera"),
+    openCamera: (cameraId?: string) => ipcRenderer.invoke("open-camera", cameraId),
     startRecording: (source: { id: string; name: string }) =>
         ipcRenderer.invoke("start-recording", source),
     stopRecording: () => ipcRenderer.invoke("stop-recording"),
@@ -72,14 +73,14 @@ ipcRenderer.on("camera:selected", (_evt, cameraId: string) => {
     )
 })
 
-// Keep compatibility with potential record bar flow
-ipcRenderer.on("record-bar:camera-selected", (_evt, cameraId: string) => {
-    window.dispatchEvent(
-        new CustomEvent("camera-selected", {
-            detail: { cameraId },
-        }),
-    )
-})
+// // Keep compatibility with potential record bar flow
+// ipcRenderer.on("record-bar:camera-selected", (_evt, cameraId: string) => {
+//     window.dispatchEvent(
+//         new CustomEvent("camera-selected", {
+//             detail: { cameraId },
+//         }),
+//     )
+// })
 
 // Bridge main-process IPC to renderer DOM event for floating bar initialization
 ipcRenderer.on("record-bar:config-selected", (_evt, config: RecordConfig) => {

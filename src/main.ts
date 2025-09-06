@@ -6,7 +6,7 @@ import started from "electron-squirrel-startup"
 
 import path from "path"
 
-// import { createCamera } from "./utils/camera"
+import { createCamera } from "./utils/camera"
 import { fixMp4Metadata } from "./utils/ffmpeg-post"
 import { createRecordBar } from "./utils/record-bar"
 import {
@@ -54,7 +54,7 @@ function getIconPath(): string {
 // Global window references
 let mainWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
-// let cameraWindow: BrowserWindow | null = null
+let cameraWindow: BrowserWindow | null = null
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -75,6 +75,7 @@ const createWindow = () => {
         icon: getIconPath(),
     })
 
+    // camera devtools (optional)
     // cameraWindow = createCamera("camera")
     // cameraWindow.webContents.openDevTools({
     //     mode: "undocked",
@@ -95,11 +96,34 @@ const createWindow = () => {
 
     ipcMain.handle("window-close", () => {
         if (mainWindow) mainWindow.close()
+        if (floatingWindow) floatingWindow.close()
+        if (cameraWindow) cameraWindow.close()
     })
 
-    // ipcMain.handle("close-camera", () => {
-    //     if (cameraWindow) cameraWindow.close()
-    // })
+    ipcMain.handle("open-camera", (_evt, cameraId?: string) => {
+        if (!cameraWindow) {
+            cameraWindow = createCamera(cameraId)
+            cameraWindow.on("closed", () => {
+                cameraWindow = null
+            })
+            cameraWindow.webContents.openDevTools({
+                mode: "undocked",
+            })
+        } else {
+            if (!cameraWindow.isDestroyed()) {
+                cameraWindow.webContents.send("camera:selected", cameraId)
+                cameraWindow.show()
+                cameraWindow.focus()
+            }
+        }
+    })
+
+    ipcMain.handle("close-camera", () => {
+        if (cameraWindow) {
+            cameraWindow.close()
+            cameraWindow = null
+        }
+    })
 
     ipcMain.handle("window-minimize", () => {
         if (mainWindow) mainWindow.minimize()
