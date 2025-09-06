@@ -23,6 +23,7 @@ declare global {
                 height: number
             }) => Promise<void>
             focusWindow: (windowTitle: string) => Promise<string>
+            getCameraWindowSourceId: () => Promise<string | null>
             startRecording: (source: { id: string; name: string }) => Promise<string>
             saveRecording: (filePath: string, buffer: Uint8Array) => Promise<string>
             openRecordingStream: (filePath: string) => Promise<string>

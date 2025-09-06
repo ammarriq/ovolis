@@ -26,6 +26,7 @@ interface FloatingBarProps {
 const FloatingBar = ({
     source,
     selectedMicId,
+    selectedCameraId,
     isSystemSoundEnabled,
     isVisible,
     onClose,
@@ -41,6 +42,7 @@ const FloatingBar = ({
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
     const screenStreamRef = useRef<MediaStream | null>(null)
+    const cameraStreamRef = useRef<MediaStream | null>(null)
     const systemAudioStreamRef = useRef<MediaStream | null>(null)
     const micStreamRef = useRef<MediaStream | null>(null)
     const audioCtxRef = useRef<AudioContext | null>(null)
@@ -111,6 +113,10 @@ const FloatingBar = ({
         if (screenStreamRef.current) {
             screenStreamRef.current.getTracks().forEach((t) => t.stop())
             screenStreamRef.current = null
+        }
+        if (cameraStreamRef.current) {
+            cameraStreamRef.current.getTracks().forEach((t) => t.stop())
+            cameraStreamRef.current = null
         }
         if (systemAudioStreamRef.current) {
             systemAudioStreamRef.current.getTracks().forEach((t) => t.stop())
@@ -257,13 +263,150 @@ const FloatingBar = ({
             if (isSystemSoundEnabled || (micStream && micStream.getAudioTracks().length)) {
                 preferredAudio = pickPreferredAudioTrack(stream, micStream, mixedAudioTrack)
             }
-            const combinedTracks: MediaStreamTrack[] = [
-                ...stream.getVideoTracks(),
+            // Compose screen + optional camera overlay into a canvas and capture it
+            const screenVideoTrack = stream.getVideoTracks()[0]
+            const s = screenVideoTrack?.getSettings ? screenVideoTrack.getSettings() : {}
+            const canvasWidth = (s as { width?: number }).width ?? 1920
+            const canvasHeight = (s as { height?: number }).height ?? 1080
+            const compFps = (s as { frameRate?: number }).frameRate ?? 30
+
+            const canvas = document.createElement("canvas")
+            canvas.width = canvasWidth
+            canvas.height = canvasHeight
+            const ctx = canvas.getContext("2d")!
+
+            const screenVideoEl = document.createElement("video")
+            screenVideoEl.muted = true
+            screenVideoEl.playsInline = true
+            screenVideoEl.autoplay = true
+            screenVideoEl.srcObject = stream
+            try {
+                await screenVideoEl.play()
+            } catch {}
+
+            let camStream: MediaStream | null = null
+            let camVideoEl: HTMLVideoElement | null = null
+            if (selectedCameraId) {
+                try {
+                    const cameraSourceId = await window.electronAPI.getCameraWindowSourceId()
+                    if (cameraSourceId) {
+                        // Capture the camera overlay window to avoid opening the webcam twice
+                        camStream = await navigator.mediaDevices.getUserMedia({
+                            audio: false,
+                            video: {
+                                mandatory: {
+                                    chromeMediaSource: "desktop",
+                                    chromeMediaSourceId: cameraSourceId,
+                                },
+                            } as MediaTrackConstraints,
+                        })
+                    } else {
+                        // Fallback: capture device directly at modest resolution/fps
+                        camStream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                deviceId: { exact: selectedCameraId },
+                                width: { ideal: 640 },
+                                height: { ideal: 640 },
+                                frameRate: { ideal: compFps },
+                            },
+                            audio: false,
+                        })
+                    }
+                    camVideoEl = document.createElement("video")
+                    camVideoEl.muted = true
+                    camVideoEl.playsInline = true
+                    camVideoEl.autoplay = true
+                    camVideoEl.srcObject = camStream
+                    try {
+                        await camVideoEl.play()
+                    } catch {}
+                } catch (e) {
+                    console.warn("Camera capture failed; proceeding without overlay", e)
+                }
+            }
+
+            const roundRect = (
+                c: CanvasRenderingContext2D,
+                x: number,
+                y: number,
+                w: number,
+                h: number,
+                r: number,
+            ) => {
+                const radius = Math.min(r, w / 2, h / 2)
+                c.beginPath()
+                c.moveTo(x + radius, y)
+                c.lineTo(x + w - radius, y)
+                c.quadraticCurveTo(x + w, y, x + w, y + radius)
+                c.lineTo(x + w, y + h - radius)
+                c.quadraticCurveTo(x + w, y + h, x + w - radius, y + h)
+                c.lineTo(x + radius, y + h)
+                c.quadraticCurveTo(x, y + h, x, y + h - radius)
+                c.lineTo(x, y + radius)
+                c.quadraticCurveTo(x, y, x + radius, y)
+                c.closePath()
+            }
+
+            const padding = 24 // px
+            // Match camera.tsx base size (size-50 ≈ 200px)
+            const overlayW = 200
+            const overlayH = 200
+            // Default radius ~1.5rem (24px) to match camera.tsx default square with rounded corners
+            const overlayRadiusPx = 24
+
+            const targetMs = 1000 / Math.min(30, Math.max(1, compFps))
+            let lastDraw = 0
+
+            const doDraw = (now: number) => {
+                if (now - lastDraw < targetMs - 1) return
+                lastDraw = now
+                try {
+                    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+                    ctx.drawImage(screenVideoEl, 0, 0, canvasWidth, canvasHeight)
+                } catch {}
+                if (camVideoEl) {
+                    const x = canvasWidth - overlayW - padding
+                    const y = canvasHeight - overlayH - padding
+                    ctx.save()
+                    roundRect(ctx, x, y, overlayW, overlayH, overlayRadiusPx)
+                    ctx.clip()
+                    const vw = camVideoEl.videoWidth || overlayW
+                    const vh = camVideoEl.videoHeight || overlayH
+                    const scale = Math.max(overlayW / vw, overlayH / vh)
+                    const dw = vw * scale
+                    const dh = vh * scale
+                    const dx = x + (overlayW - dw) / 2
+                    const dy = y + (overlayH - dh) / 2
+                    try {
+                        ctx.drawImage(camVideoEl, dx, dy, dw, dh)
+                    } catch {}
+                    ctx.restore()
+                }
+            }
+
+            const anyVideo = screenVideoEl as HTMLVideoElement
+            if (typeof anyVideo.requestVideoFrameCallback === "function") {
+                const onFrame = (_now: number) => {
+                    doDraw(performance.now())
+                    anyVideo.requestVideoFrameCallback(onFrame)
+                }
+                anyVideo.requestVideoFrameCallback(onFrame)
+            } else {
+                const loop = (now: number) => {
+                    doDraw(now)
+                    requestAnimationFrame(loop)
+                }
+                requestAnimationFrame(loop)
+            }
+
+            const canvasStream = (canvas as HTMLCanvasElement).captureStream(Math.min(30, compFps))
+            const combinedStream = new MediaStream([
+                ...canvasStream.getVideoTracks(),
                 ...(preferredAudio ? [preferredAudio] : []),
-            ]
-            const combinedStream = new MediaStream(combinedTracks)
+            ])
 
             screenStreamRef.current = stream
+            cameraStreamRef.current = camStream
             systemAudioStreamRef.current = systemAudioStream
             micStreamRef.current = micStream
             streamRef.current = combinedStream

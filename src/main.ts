@@ -1,7 +1,7 @@
 import type { RecordConfig } from "./types/record-config"
 import type { ScreenSource } from "./types/screen-sources"
 
-import { app, BrowserWindow, ipcMain, screen, shell } from "electron"
+import { app, BrowserWindow, desktopCapturer, ipcMain, screen, shell } from "electron"
 import started from "electron-squirrel-startup"
 
 import path from "path"
@@ -176,6 +176,26 @@ const createWindow = () => {
     ipcMain.handle("open-folder", async (_, filePath: string) => {
         const folderPath = path.dirname(filePath)
         await shell.openPath(folderPath)
+    })
+
+    // Provide the source id of the Camera window for efficient PiP compositing
+    ipcMain.handle("get-camera-source-id", async () => {
+        try {
+            if (!cameraWindow || cameraWindow.isDestroyed()) return null
+            const cameraTitle = cameraWindow.getTitle() || "Camera"
+            const sources = await desktopCapturer.getSources({
+                types: ["window"],
+                fetchWindowIcons: false,
+                thumbnailSize: { width: 1, height: 1 },
+            })
+            const match = sources.find(
+                (s) => (s.name || "").toLowerCase() === cameraTitle.toLowerCase(),
+            )
+            return match?.id ?? null
+        } catch (e) {
+            console.warn("Failed to get camera source id:", e)
+            return null
+        }
     })
 
     // recording options

@@ -28,6 +28,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     focusWindow: (windowTitle: string) => {
         return ipcRenderer.invoke("focus-window", windowTitle)
     },
+    getCameraWindowSourceId: () => {
+        return ipcRenderer.invoke("get-camera-source-id")
+    },
 
     // startRecording: (source: { id: string; name: string }) => {
     //     return ipcRenderer.invoke("start-recording", source)

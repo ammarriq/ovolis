@@ -33,9 +33,9 @@ function Camera() {
     }, [])
 
     return (
-        <main className="shadow-cursor relative flex h-screen w-screen flex-col items-center justify-between p-2">
+        <main className="shadow-cursor group relative flex h-screen w-screen flex-col items-center justify-between p-2">
             <div
-                className="shadow-cursor flex max-w-max items-center gap-1 rounded-md bg-white p-1"
+                className="shadow-cursor hidden max-w-max items-center gap-1 rounded-md bg-white p-1 group-hover:flex"
                 style={{ WebkitAppRegion: "no-drag" }}
             >
                 <Button
