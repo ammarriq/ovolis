@@ -287,38 +287,38 @@ const FloatingBar = ({
 
             let camStream: MediaStream | null = null
             let camVideoEl: HTMLVideoElement | null = null
-            if (selectedCameraId) {
+            try {
+                // Prefer capturing the camera window if it exists; fallback to a physical camera device.
+                let captured = false
                 try {
-                    // Keep camera window visible. Prefer capturing the camera window; fallback to device.
-                    let captured = false
-                    try {
-                        const cameraSourceId = await window.electronAPI.getCameraWindowSourceId?.()
-                        if (cameraSourceId) {
-                            camStream = await navigator.mediaDevices.getUserMedia({
-                                audio: false,
-                                video: {
-                                    mandatory: {
-                                        chromeMediaSource: "desktop",
-                                        chromeMediaSourceId: cameraSourceId,
-                                    },
-                                } as unknown,
-                            })
-                            captured = true
-                        }
-                    } catch {}
-
-                    if (!captured) {
+                    const cameraSourceId = await window.electronAPI.getCameraWindowSourceId?.()
+                    if (cameraSourceId) {
                         camStream = await navigator.mediaDevices.getUserMedia({
-                            video: {
-                                deviceId: { exact: selectedCameraId },
-                                width: { ideal: 640 },
-                                height: { ideal: 640 },
-                                frameRate: { ideal: compFps },
-                            },
                             audio: false,
+                            video: {
+                                mandatory: {
+                                    chromeMediaSource: "desktop",
+                                    chromeMediaSourceId: cameraSourceId,
+                                },
+                            } as unknown,
                         })
+                        captured = true
                     }
+                } catch {}
 
+                if (!captured && selectedCameraId) {
+                    camStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: selectedCameraId },
+                            width: { ideal: 640 },
+                            height: { ideal: 640 },
+                            frameRate: { ideal: compFps },
+                        },
+                        audio: false,
+                    })
+                }
+
+                if (camStream) {
                     camVideoEl = document.createElement("video")
                     camVideoEl.muted = true
                     camVideoEl.playsInline = true
@@ -327,9 +327,9 @@ const FloatingBar = ({
                     try {
                         await camVideoEl.play()
                     } catch {}
-                } catch (e) {
-                    console.warn("Camera capture failed; proceeding without overlay", e)
                 }
+            } catch (e) {
+                console.warn("Camera capture failed; proceeding without overlay", e)
             }
 
             const padding = 24 // px
@@ -746,11 +746,8 @@ const RecordBar = () => {
     const { config, isLoading } = useRecordConfig()
 
     const handleClose = () => {
-        // setIsVisible(false)
-        // setSource(null)
-        if (window.electronAPI?.closeRecordBar) {
-            window.electronAPI.closeRecordBar()
-        }
+        window.electronAPI.closeRecordBar()
+        window.electronAPI.closeCamera()
     }
 
     const handleSourceChange = (_newSource: RecordConfig["source"] | null) => {
