@@ -418,6 +418,37 @@ const FloatingBar = ({
                 lastVH = vh
             }
 
+            // Compute screen draw geometry (contain) to avoid stretching
+            let lastCanvasW = canvasWidth
+            let lastCanvasH = canvasHeight
+            let lastScreenVW = 0
+            let lastScreenVH = 0
+            let screenDX = 0
+            let screenDY = 0
+            let screenDW = canvasWidth
+            let screenDH = canvasHeight
+
+            const updateScreenGeometry = () => {
+                const vw = screenVideoEl.videoWidth || canvasWidth
+                const vh = screenVideoEl.videoHeight || canvasHeight
+                // Contain: preserve AR and letterbox/pillarbox to canvas
+                const scale = Math.min(canvasWidth / vw, canvasHeight / vh)
+                screenDW = Math.max(1, Math.round(vw * scale))
+                screenDH = Math.max(1, Math.round(vh * scale))
+                screenDX = Math.floor((canvasWidth - screenDW) / 2)
+                screenDY = Math.floor((canvasHeight - screenDH) / 2)
+                lastCanvasW = canvasWidth
+                lastCanvasH = canvasHeight
+                lastScreenVW = vw
+                lastScreenVH = vh
+            }
+
+            // Initialize screen geometry once video has metadata
+            try {
+                if (screenVideoEl.readyState >= 1) updateScreenGeometry()
+                else screenVideoEl.onloadedmetadata = () => updateScreenGeometry()
+            } catch {}
+
             const targetMs = 1000 / Math.min(24, Math.max(1, compFps))
             let lastDraw = 0
 
@@ -425,8 +456,24 @@ const FloatingBar = ({
                 if (now - lastDraw < targetMs - 1) return
                 lastDraw = now
                 try {
-                    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-                    ctx.drawImage(screenVideoEl, 0, 0, canvasWidth, canvasHeight)
+                    // Update geometry if canvas or source dims changed
+                    const vw = screenVideoEl.videoWidth || canvasWidth
+                    const vh = screenVideoEl.videoHeight || canvasHeight
+                    if (
+                        canvasWidth !== lastCanvasW ||
+                        canvasHeight !== lastCanvasH ||
+                        vw !== lastScreenVW ||
+                        vh !== lastScreenVH
+                    ) {
+                        updateScreenGeometry()
+                    }
+                    // Clear with black to avoid transparent edges in output
+                    ctx.save()
+                    ctx.fillStyle = "#000"
+                    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+                    ctx.restore()
+                    // Draw the screen video letterboxed
+                    ctx.drawImage(screenVideoEl, screenDX, screenDY, screenDW, screenDH)
                 } catch {}
                 if (camVideoEl) {
                     // Refresh cached geometry if anything changed
