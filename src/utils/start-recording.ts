@@ -26,7 +26,7 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
         const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.mp4`
 
         // Get the user's desktop path for saving recordings
-        const desktopPath = path.join(app.getPath("desktop"), "Recrod Recordings")
+        const desktopPath = path.join(app.getPath("desktop"), "CursorX Recordings")
         const filePath = path.join(desktopPath, filename)
 
         // Try to force exact pixel dimensions for screen capture.
@@ -88,7 +88,10 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
         console.log("=== RECORDING CONSTRAINTS DIAGNOSTICS ===")
         console.log("Recording constraints:", recordingConfig.constraints)
         if (exactWidth && exactHeight) {
-            console.log("Forcing exact screen dimensions:", { width: exactWidth, height: exactHeight })
+            console.log("Forcing exact screen dimensions:", {
+                width: exactWidth,
+                height: exactHeight,
+            })
         } else {
             console.log("Window capture: using source's native size (no scaling).")
         }

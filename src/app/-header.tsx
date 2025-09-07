@@ -5,28 +5,28 @@ import { MinimizeIcon } from "~/icons/minimize"
 function Header() {
     return (
         <header
-            className="flex items-center fixed top-0 bg-background border-b w-full h-10 overflow-hidden"
+            className="bg-background fixed top-0 flex h-10 w-full items-center overflow-hidden border-b"
             style={{ WebkitAppRegion: "drag" }}
         >
-            <div className="text-xs font-medium px-3">Recrod</div>
+            <div className="px-3 text-xs font-medium">CursorX</div>
             <div className="w-16"></div> {/* Spacer for centering */}
-            <div className="flex items-center ml-auto absolute top-0 right-0">
+            <div className="absolute top-0 right-0 ml-auto flex items-center">
                 <button
-                    className="h-10 w-11 grid place-items-center hover:bg-muted"
+                    className="hover:bg-muted grid h-10 w-11 place-items-center"
                     onClick={() => window.electronAPI?.minimizeWindow()}
                     style={{ WebkitAppRegion: "no-drag" }}
                 >
-                    <MinimizeIcon className="size-4 mt-0.5" />
+                    <MinimizeIcon className="mt-0.5 size-4" />
                 </button>
                 <button
-                    className="h-10 w-11 grid place-items-center hover:bg-muted"
+                    className="hover:bg-muted grid h-10 w-11 place-items-center"
                     onClick={() => window.electronAPI?.maximizeWindow()}
                     style={{ WebkitAppRegion: "no-drag" }}
                 >
                     <MaximizeIcon className="size-4" />
                 </button>
                 <button
-                    className="h-10 w-11 grid place-items-center hover:bg-destructive hover:text-destructive-foreground"
+                    className="hover:bg-destructive hover:text-destructive-foreground grid h-10 w-11 place-items-center"
                     onClick={() => window.electronAPI?.closeWindow()}
                     style={{ WebkitAppRegion: "no-drag" }}
                 >
