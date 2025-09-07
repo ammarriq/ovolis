@@ -2,7 +2,7 @@ import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useState } from "react"
 
-function useScreenSource() {
+function useSelectedScreen() {
     const [source, setSource] = useState<ScreenSource | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -24,4 +24,4 @@ function useScreenSource() {
     return { source, isLoading }
 }
 
-export default useScreenSource
+export default useSelectedScreen

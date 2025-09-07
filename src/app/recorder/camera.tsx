@@ -1,41 +1,25 @@
 import "@fontsource-variable/noto-sans-lao"
 import "~/index.css"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { Button } from "react-aria-components"
 
-import useDevices from "~/hooks/use-devices"
 import useLiveVideo from "~/hooks/use-live-video"
+import useSelectedCamera from "~/hooks/use-selected-camera"
+import useWindowDrag from "~/hooks/use-window-drag"
 import { CircleIcon } from "~/icons/circle"
-// import { CircleIcon } from "~/icons/circle"
 import { CloseIcon } from "~/icons/close"
 import { SquareIcon } from "~/icons/square"
-// import { SquareIcon } from "~/icons/square"
 
 function Camera() {
-    const [cameraId, setCameraId] = useState<string | null>(null)
     const [isCircle, setIsCircle] = useState(false)
-    const containerRef = useRef<HTMLDivElement | null>(null)
-    const draggingRef = useRef(false)
-    const dragOffsetRef = useRef<{ x: number; y: number } | null>(null)
 
-    const { cameras } = useDevices()
+    const cameraId = useSelectedCamera()
+    const { containerRef } = useWindowDrag()
     const { videoRef } = useLiveVideo({
-        cameraId: cameraId ?? cameras[0]?.deviceId ?? null,
+        cameraId,
     })
-
-    useEffect(() => {
-        const handleCameraSelected = (event: CustomEvent<{ cameraId: string }>) => {
-            setCameraId(event.detail.cameraId)
-        }
-
-        window.addEventListener("camera-selected", handleCameraSelected)
-
-        return () => {
-            window.removeEventListener("camera-selected", handleCameraSelected)
-        }
-    }, [])
 
     // Report the actual video element size and border radius to main
     useEffect(() => {
@@ -108,59 +92,6 @@ function Camera() {
             window.removeEventListener("resize", onResize)
         }
     }, [isCircle, videoRef])
-
-    // Implement native dragging without -webkit-app-region
-    useEffect(() => {
-        const el = containerRef.current
-        if (!el) return
-
-        const onMouseDown = async (e: MouseEvent) => {
-            const target = e.target as HTMLElement | null
-            if (target && target.closest('[data-no-drag="true"]')) return
-
-            // Only left button
-            if (e.button !== 0) return
-
-            e.preventDefault()
-            try {
-                const bounds = await window.electronAPI.getCurrentWindowBounds?.()
-                if (!bounds) return
-                // Use mouse screen position from the event to minimize IPC
-                const offsetX = e.screenX - bounds.x
-                const offsetY = e.screenY - bounds.y
-                dragOffsetRef.current = { x: offsetX, y: offsetY }
-                draggingRef.current = true
-                const prevUserSelect = document.body.style.userSelect
-                const prevCursor = document.body.style.cursor
-                document.body.style.userSelect = "none"
-                document.body.style.cursor = "grabbing"
-
-                const onMove = (ev: MouseEvent) => {
-                    if (!draggingRef.current || !dragOffsetRef.current) return
-                    const nx = ev.screenX - dragOffsetRef.current.x
-                    const ny = ev.screenY - dragOffsetRef.current.y
-                    window.electronAPI.setCurrentWindowPosition?.(nx, ny)
-                }
-                const onUp = () => {
-                    draggingRef.current = false
-                    dragOffsetRef.current = null
-                    document.body.style.userSelect = prevUserSelect
-                    document.body.style.cursor = prevCursor
-                    window.removeEventListener("mousemove", onMove)
-                    window.removeEventListener("mouseup", onUp)
-                }
-                window.addEventListener("mousemove", onMove)
-                window.addEventListener("mouseup", onUp)
-            } catch {
-                // ignore
-            }
-        }
-
-        el.addEventListener("mousedown", onMouseDown)
-        return () => {
-            el.removeEventListener("mousedown", onMouseDown)
-        }
-    }, [])
 
     return (
         <main
