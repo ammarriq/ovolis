@@ -156,7 +156,6 @@ const FloatingBar = ({
                 name: source.name,
             })
             const recordingConfig = JSON.parse(recordingConfigStr)
-            console.log("Recording config:", recordingConfig)
 
             filePathRef.current = recordingConfig.filePath as string
             try {
