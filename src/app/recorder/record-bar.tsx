@@ -335,30 +335,21 @@ const FloatingBar = ({
             let camStream: MediaStream | null = null
             let camVideoEl: HTMLVideoElement | null = null
             try {
-                // Prefer capturing the camera window if it exists; fallback to a physical camera device.
-                let captured = false
+                // Always use the raw camera device for overlay to avoid black background from window capture.
+                // If the floating camera window is open, close it temporarily to free the device.
                 try {
-                    const cameraSourceId = await window.electronAPI.getCameraWindowSourceId?.()
-                    if (cameraSourceId) {
-                        camStream = await navigator.mediaDevices.getUserMedia({
-                            audio: false,
-                            video: {
-                                mandatory: {
-                                    chromeMediaSource: "desktop",
-                                    chromeMediaSourceId: cameraSourceId,
-                                },
-                            } as unknown,
-                        })
-                        captured = true
+                    if (selectedCameraId) {
+                        await window.electronAPI.closeCamera?.()
+                        closedCameraForRecordingRef.current = true
                     }
                 } catch {}
 
-                if (!captured && selectedCameraId) {
+                if (selectedCameraId) {
                     camStream = await navigator.mediaDevices.getUserMedia({
                         video: {
                             deviceId: { exact: selectedCameraId },
-                            width: { ideal: 640 },
-                            height: { ideal: 640 },
+                            // Avoid width/height constraints to preserve native aspect ratio
+                            // Draw logic will scale+clip to the overlay without stretching
                             frameRate: { ideal: compFps },
                         },
                         audio: false,
@@ -381,9 +372,9 @@ const FloatingBar = ({
 
             const padding = 24 // px
             // Match camera.tsx base size (size-50 ≈ 200px)
-            let overlayW = 200
-            let overlayH = 200
-            let overlayRadiusPx = 24 // default ~1.5rem
+            let overlayW = 0
+            let overlayH = 0
+            let overlayRadiusPx = 0
 
             try {
                 const metrics = await window.electronAPI.getCameraMetrics?.()
@@ -434,6 +425,11 @@ const FloatingBar = ({
             let drawDH = overlayH
 
             const updateGeometry = () => {
+                // Defer drawing until camera metrics provide valid dimensions
+                if (overlayW < 1 || overlayH < 1) {
+                    clipPath = null
+                    return
+                }
                 const x = canvasWidth - overlayW - padding
                 const y = canvasHeight - overlayH - padding
                 const p = new Path2D()
@@ -536,12 +532,14 @@ const FloatingBar = ({
                     ) {
                         updateGeometry()
                     }
-                    ctx.save()
-                    if (clipPath) ctx.clip(clipPath)
-                    try {
-                        ctx.drawImage(camVideoEl, drawDX, drawDY, drawDW, drawDH)
-                    } catch {}
-                    ctx.restore()
+                    if (overlayW >= 1 && overlayH >= 1 && clipPath) {
+                        ctx.save()
+                        ctx.clip(clipPath)
+                        try {
+                            ctx.drawImage(camVideoEl, drawDX, drawDY, drawDW, drawDH)
+                        } catch {}
+                        ctx.restore()
+                    }
                 }
             }
 
