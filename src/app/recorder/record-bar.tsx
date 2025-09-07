@@ -20,7 +20,6 @@ interface FloatingBarProps {
     isSystemSoundEnabled: boolean
     isVisible: boolean
     onClose: () => void
-    onSourceChange: (source: RecordConfig["source"] | null) => void
 }
 
 const FloatingBar = ({
@@ -30,7 +29,6 @@ const FloatingBar = ({
     isSystemSoundEnabled,
     isVisible,
     onClose,
-    onSourceChange,
 }: FloatingBarProps) => {
     const [isRecording, setIsRecording] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
@@ -268,9 +266,9 @@ const FloatingBar = ({
             const s = screenVideoTrack?.getSettings ? screenVideoTrack.getSettings() : {}
             // Start with unknown canvas dimensions; we will set these to the
             // native captured source dimensions once metadata is available.
-            let canvasWidth = (s as { width?: number }).width ?? 0
-            let canvasHeight = (s as { height?: number }).height ?? 0
-            const compFps = (s as { frameRate?: number }).frameRate ?? 30
+            let canvasWidth = s.width ?? 0
+            let canvasHeight = s.height ?? 0
+            const compFps = s.frameRate ?? 30
 
             const canvas = document.createElement("canvas")
             // Temporarily set a minimal size to avoid 0x0 canvas issues
@@ -314,8 +312,8 @@ const FloatingBar = ({
                         else screenVideoEl.onloadedmetadata = onReady
                     } catch {
                         // If anything goes wrong, fall back to settings or 1080p
-                        canvasWidth = canvasWidth || (s as { width?: number }).width || 1920
-                        canvasHeight = canvasHeight || (s as { height?: number }).height || 1080
+                        canvasWidth = canvasWidth || s.width || 1920
+                        canvasHeight = canvasHeight || s.height || 1080
                         canvas.width = canvasWidth
                         canvas.height = canvasHeight
                         resolve()
@@ -542,7 +540,7 @@ const FloatingBar = ({
                 }
             }
 
-            const anyVideo = screenVideoEl as HTMLVideoElement
+            const anyVideo = screenVideoEl
             if (typeof anyVideo.requestVideoFrameCallback === "function") {
                 const onFrame = (_now: number) => {
                     doDraw(performance.now())
@@ -557,7 +555,7 @@ const FloatingBar = ({
                 requestAnimationFrame(loop)
             }
 
-            const canvasStream = (canvas as HTMLCanvasElement).captureStream(Math.min(30, compFps))
+            const canvasStream = canvas.captureStream(Math.min(30, compFps))
             const combinedStream = new MediaStream([
                 ...canvasStream.getVideoTracks(),
                 ...(preferredAudio ? [preferredAudio] : []),
@@ -590,9 +588,9 @@ const FloatingBar = ({
 
             const videoTrack = stream.getVideoTracks()[0]
             const settings = videoTrack?.getSettings ? videoTrack.getSettings() : {}
-            const width = (settings as { width: number }).width ?? 1920
-            const height = (settings as { height: number }).height ?? 1080
-            const fps = (settings as { frameRate: number }).frameRate ?? 30
+            const width = settings.width ?? 1920
+            const height = settings.height ?? 1080
+            const fps = settings.frameRate ?? 30
 
             const targetBpppf = 0.1
             const computed = Math.round(width * height * fps * targetBpppf)
@@ -718,7 +716,6 @@ const FloatingBar = ({
                     setIsRecording(false)
                     setIsPaused(false)
                     setRecordingTime(0)
-                    onSourceChange(null)
                     onClose()
                     streamingEnabledRef.current = false
                     filePathRef.current = null
@@ -841,13 +838,6 @@ const RecordBar = () => {
         window.electronAPI.closeCamera()
     }
 
-    const handleSourceChange = (_newSource: RecordConfig["source"] | null) => {
-        // setSource(newSource)
-        // if (!newSource) {
-        //     handleClose()
-        // }
-    }
-
     if (!config || isLoading) {
         return (
             <div className="flex h-full w-full items-center justify-center bg-transparent">
@@ -865,7 +855,6 @@ const RecordBar = () => {
                 isSystemSoundEnabled={config.isSystemSoundEnabled}
                 isVisible={!isLoading}
                 onClose={handleClose}
-                onSourceChange={handleSourceChange}
             />
         </div>
     )
