@@ -267,13 +267,16 @@ const FloatingBar = ({
             // Compose screen + optional camera overlay into a canvas and capture it
             const screenVideoTrack = stream.getVideoTracks()[0]
             const s = screenVideoTrack?.getSettings ? screenVideoTrack.getSettings() : {}
-            const canvasWidth = (s as { width?: number }).width ?? 1920
-            const canvasHeight = (s as { height?: number }).height ?? 1080
+            // Start with unknown canvas dimensions; we will set these to the
+            // native captured source dimensions once metadata is available.
+            let canvasWidth = (s as { width?: number }).width ?? 0
+            let canvasHeight = (s as { height?: number }).height ?? 0
             const compFps = (s as { frameRate?: number }).frameRate ?? 30
 
             const canvas = document.createElement("canvas")
-            canvas.width = canvasWidth
-            canvas.height = canvasHeight
+            // Temporarily set a minimal size to avoid 0x0 canvas issues
+            canvas.width = canvasWidth || 2
+            canvas.height = canvasHeight || 2
             const ctx = canvas.getContext("2d")!
 
             const screenVideoEl = document.createElement("video")
@@ -283,6 +286,50 @@ const FloatingBar = ({
             screenVideoEl.srcObject = stream
             try {
                 await screenVideoEl.play()
+            } catch {}
+
+            // Ensure the output canvas exactly matches the captured source dimensions.
+            // This guarantees the recorded video resolution equals the screen/window size.
+            const applyNativeCanvasSize = () => {
+                const vw = screenVideoEl.videoWidth
+                const vh = screenVideoEl.videoHeight
+                if (vw && vh && (vw !== canvasWidth || vh !== canvasHeight)) {
+                    canvasWidth = vw
+                    canvasHeight = vh
+                    canvas.width = canvasWidth
+                    canvas.height = canvasHeight
+                }
+            }
+            // Wait for metadata if needed, then set the canvas size.
+            if (!screenVideoEl.videoWidth || !screenVideoEl.videoHeight) {
+                await new Promise<void>((resolve) => {
+                    const onReady = () => {
+                        try {
+                            applyNativeCanvasSize()
+                        } finally {
+                            resolve()
+                        }
+                    }
+                    try {
+                        if (screenVideoEl.readyState >= 1) onReady()
+                        else screenVideoEl.onloadedmetadata = onReady
+                    } catch {
+                        // If anything goes wrong, fall back to settings or 1080p
+                        canvasWidth = canvasWidth || (s as { width?: number }).width || 1920
+                        canvasHeight = canvasHeight || (s as { height?: number }).height || 1080
+                        canvas.width = canvasWidth
+                        canvas.height = canvasHeight
+                        resolve()
+                    }
+                })
+            } else {
+                applyNativeCanvasSize()
+            }
+
+            // Also react to dynamic size changes on the captured track when possible
+            try {
+                // Not all environments fire this, but harmless if unsupported
+                ;(screenVideoEl as HTMLVideoElement).onresize = () => applyNativeCanvasSize()
             } catch {}
 
             let camStream: MediaStream | null = null
