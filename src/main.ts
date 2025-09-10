@@ -57,14 +57,10 @@ let floatingWindow: BrowserWindow | null = null
 let cameraWindow: BrowserWindow | null = null
 let latestCameraMetrics:
     | {
-          x: number
-          y: number
           width: number
           height: number
           radiusPx: number
           dpr: number
-          windowWidth: number
-          windowHeight: number
       }
     | null = null
 
@@ -230,14 +226,10 @@ const createWindow = () => {
         (
             _evt,
             metrics: {
-                x: number
-                y: number
                 width: number
                 height: number
                 radiusPx: number
                 dpr: number
-                windowWidth: number
-                windowHeight: number
             },
         ) => {
             latestCameraMetrics = metrics

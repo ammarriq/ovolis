@@ -11,6 +11,7 @@ import useWindowDrag from "~/hooks/use-window-drag"
 import { CircleIcon } from "~/icons/circle"
 import { CloseIcon } from "~/icons/close"
 import { SquareIcon } from "~/icons/square"
+import { tryCatchSync } from "~/utils/try-catch"
 
 function Camera() {
     const [isCircle, setIsCircle] = useState(false)
@@ -36,6 +37,7 @@ function Camera() {
             // Read the effective border radius in pixels from computed styles
             // This ensures record-bar.tsx matches the exact rounding (including rem/%).
             let radiusPx = 0
+            
             try {
                 const cs = window.getComputedStyle(videoEl)
                 // Use top-left radius as the canonical value; for circles it equals half size.
@@ -44,28 +46,20 @@ function Camera() {
                 if (!Number.isNaN(parsed)) {
                     radiusPx = parsed
                 } else {
-                    // Fallback: derive from shape state
                     radiusPx = isCircle ? Math.min(rect.width, rect.height) / 2 : 24
                 }
             } catch {
                 radiusPx = isCircle ? Math.min(rect.width, rect.height) / 2 : 24
             }
 
-            try {
-                const bounds = await window.electronAPI.getCurrentWindowBounds?.()
-                window.electronAPI.updateCameraMetrics?.({
-                    x: bounds?.x ?? 0,
-                    y: bounds?.y ?? 0,
+            tryCatchSync(
+                window.electronAPI.updateCameraMetrics({
                     width: Math.round(rect.width),
                     height: Math.round(rect.height),
                     radiusPx: Math.round(radiusPx),
                     dpr,
-                    windowWidth: bounds?.width ?? Math.round(window.innerWidth),
-                    windowHeight: bounds?.height ?? Math.round(window.innerHeight),
-                })
-            } catch {
-                // ignore
-            }
+                }),
+            )
         }
 
         // Observe element size/border-radius changes

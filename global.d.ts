@@ -26,6 +26,12 @@ declare global {
             getCameraWindowSourceId: () => Promise<string | null>
             // Camera overlay composition helpers
             updateCameraMetrics: (metrics: {
+                width: number
+                height: number
+                radiusPx: number
+                dpr: number
+            }) => void
+            getCameraMetrics: () => Promise<{
                 x: number
                 y: number
                 width: number
@@ -34,20 +40,7 @@ declare global {
                 dpr: number
                 windowWidth: number
                 windowHeight: number
-            }) => void
-            getCameraMetrics: () => Promise<
-                | {
-                      x: number
-                      y: number
-                      width: number
-                      height: number
-                      radiusPx: number
-                      dpr: number
-                      windowWidth: number
-                      windowHeight: number
-                  }
-                | null
-            >
+            } | null>
             startRecording: (source: { id: string; name: string }) => Promise<string>
             saveRecording: (filePath: string, buffer: Uint8Array) => Promise<string>
             openRecordingStream: (filePath: string) => Promise<string>
@@ -63,8 +56,7 @@ declare global {
             // Cursor/window helpers for native window dragging
             getCursorPoint: () => Promise<{ x: number; y: number }>
             getCurrentWindowBounds: () => Promise<
-                | { x: number; y: number; width: number; height: number }
-                | undefined
+                { x: number; y: number; width: number; height: number } | undefined
             >
             setCurrentWindowPosition: (x: number, y: number) => Promise<void>
         }

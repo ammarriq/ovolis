@@ -7,11 +7,16 @@ import { useEffect, useRef, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { Button } from "react-aria-components"
 
+import useAudioMixer from "~/hooks/use-audio-mixer"
+import useAudioSources from "~/hooks/use-audio-sources"
+import useCameraOverlay from "~/hooks/use-camera-overlay"
 import useRecordConfig from "~/hooks/use-record-config"
+import useVideoCompositor from "~/hooks/use-video-compositor"
 import { DeleteIcon } from "~/icons/delete"
 import { PauseIcon } from "~/icons/pause"
 import { PlayIcon } from "~/icons/play"
 import { StopIcon } from "~/icons/stop"
+import { tryCatch } from "~/utils/try-catch"
 
 interface FloatingBarProps {
     source: RecordConfig["source"]
@@ -22,14 +27,21 @@ interface FloatingBarProps {
     onClose: () => void
 }
 
-const FloatingBar = ({
+const electronAPI = window.electronAPI
+
+function FloatingBar({
     source,
     selectedMicId,
     selectedCameraId,
     isSystemSoundEnabled,
     isVisible,
     onClose,
-}: FloatingBarProps) => {
+}: FloatingBarProps) {
+    const { createCameraOverlay } = useCameraOverlay()
+    const { createVideoCompositor } = useVideoCompositor()
+    const { createAudioSources } = useAudioSources()
+    const { createAudioMixer } = useAudioMixer()
+
     const [isRecording, setIsRecording] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
     const [recordingTime, setRecordingTime] = useState(0)
@@ -80,17 +92,6 @@ const FloatingBar = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const pickPreferredAudioTrack = (
-        screen: MediaStream,
-        mic: MediaStream | null,
-        mixed?: MediaStreamTrack,
-    ) => {
-        if (mixed) return mixed
-        const screenAudio = screen.getAudioTracks()[0]
-        if (screenAudio) return screenAudio
-        const micAudio = mic?.getAudioTracks()?.[0]
-        return micAudio
-    }
     const logDisplayDiagnostics = () => {
         console.log("=== RECORDING DIAGNOSTICS ===")
         console.log("Screen dimensions:", {
@@ -136,7 +137,7 @@ const FloatingBar = ({
     }
 
     const startRecording = async () => {
-        if (!window.electronAPI || !source) {
+        if (!electronAPI || !source) {
             alert("Recording is not available or source not selected.")
             return
         }
@@ -149,420 +150,83 @@ const FloatingBar = ({
 
         try {
             logDisplayDiagnostics()
-            const recordingConfigStr = await window.electronAPI.startRecording({
+            const recordingConfigStr = await electronAPI.startRecording({
                 id: source.id,
                 name: source.name,
             })
-            const recordingConfig = JSON.parse(recordingConfigStr)
 
-            filePathRef.current = recordingConfig.filePath as string
-            try {
-                await window.electronAPI.openRecordingStream(recordingConfig.filePath)
+            const recordingConfig = JSON.parse(recordingConfigStr)
+            filePathRef.current = String(recordingConfig.filePath)
+
+            const recordResult = await tryCatch(
+                electronAPI.openRecordingStream(recordingConfig.filePath),
+            )
+
+            if (recordResult.error) {
+                streamingEnabledRef.current = false
+            }
+
+            if (recordResult.data) {
                 streamingEnabledRef.current = true
                 writeQueueRef.current = Promise.resolve()
-                console.log("Streaming recording enabled (writing to .part)")
-            } catch (e) {
-                streamingEnabledRef.current = false
-                console.warn("Streaming not available, falling back to buffered save:", e)
             }
 
-            let stream: MediaStream
-            try {
-                stream = await navigator.mediaDevices.getUserMedia(recordingConfig.constraints)
-            } catch (primaryError) {
-                console.warn("Primary capture method failed, trying fallback:", primaryError)
+            const { data: stream, error: streamError } = await tryCatch(
+                navigator.mediaDevices.getUserMedia(recordingConfig.constraints),
+            )
+
+            if (streamError) {
+                console.warn("Primary capture method failed, trying fallback:", streamError)
             }
 
-            // Best-effort: if the primary stream lacks system audio (common for window-only capture),
-            // try to acquire a dedicated system loopback audio stream and mix it in.
-            let systemAudioStream: MediaStream | null = null
-            try {
-                if (isSystemSoundEnabled && !stream.getAudioTracks().length) {
-                    // Electron/Chromium-specific constraint for system loopback
-                    systemAudioStream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            mandatory: {
-                                chromeMediaSource: "desktop",
-                                // Intentionally omit chromeMediaSourceId to request loopback
-                            },
-                        } as MediaTrackConstraints,
-                        video: false,
-                    })
-                    if (systemAudioStream.getAudioTracks().length) {
-                        console.log("Acquired dedicated system audio loopback track")
-                    }
-                }
-            } catch (sysErr) {
-                console.warn("System loopback audio not available:", sysErr)
-            }
-            let micStream: MediaStream | null = null
-            try {
-                if (selectedMicId) {
-                    micStream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            deviceId: { exact: selectedMicId },
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true,
-                        },
-                        video: false,
-                    })
-                }
-            } catch (micErr) {
-                console.warn("Microphone capture failed; continuing without mic:", micErr)
-            }
+            // Acquire audio sources via hook
+            const { systemAudioStream, micStream } = await createAudioSources({
+                isSystemSoundEnabled,
+                selectedMicId,
+                primaryStream: stream,
+            })
 
-            let mixedAudioTrack: MediaStreamTrack | undefined
-            try {
-                const hasSystemAudio =
-                    isSystemSoundEnabled &&
-                    (stream.getAudioTracks().length > 0 ||
-                        (systemAudioStream?.getAudioTracks().length ?? 0) > 0)
+            // Mix audio via hook (handles fallback selection internally)
+            const mixer = await createAudioMixer({
+                isSystemSoundEnabled,
+                primaryStream: stream,
+                systemAudioStream,
+                micStream,
+            })
+            // Persist audio nodes for cleanup
+            audioCtxRef.current = mixer.audioCtx
+            audioDestRef.current = mixer.audioDest
 
-                const hasMicAudio = micStream?.getAudioTracks().length > 0
-                if (hasSystemAudio || hasMicAudio) {
-                    const audioCtx = new window.AudioContext()
-                    audioCtxRef.current = audioCtx
-                    const dest = audioCtx.createMediaStreamDestination()
-                    audioDestRef.current = dest
+            const mixedAudioTrack: MediaStreamTrack | undefined = mixer.outputTrack
+            const preferredAudio: MediaStreamTrack | undefined = mixedAudioTrack
 
-                    // Add system audio from primary stream, if present
-                    const primarySysTracks = isSystemSoundEnabled ? stream.getAudioTracks() : []
-                    if (primarySysTracks.length > 0) {
-                        const systemAudioOnly = new MediaStream(primarySysTracks)
-                        const sysSource = audioCtx.createMediaStreamSource(systemAudioOnly)
-                        sysSource.connect(dest)
-                    }
-                    // Or add system loopback stream if that was acquired
-                    const loopbackTracks = isSystemSoundEnabled
-                        ? (systemAudioStream?.getAudioTracks() ?? [])
-                        : []
-                    if (loopbackTracks.length > 0) {
-                        const loopbackOnly = new MediaStream(loopbackTracks)
-                        const loopSource = audioCtx.createMediaStreamSource(loopbackOnly)
-                        loopSource.connect(dest)
-                    }
-                    if (hasMicAudio) {
-                        const micAudioOnly = new MediaStream(micStream!.getAudioTracks())
-                        const micSource = audioCtx.createMediaStreamSource(micAudioOnly)
-                        micSource.connect(dest)
-                    }
-
-                    mixedAudioTrack = dest.stream.getAudioTracks()[0]
-                }
-            } catch (mixErr) {
-                console.warn(
-                    "Audio mixing failed; will fallback to available audio tracks:",
-                    mixErr,
-                )
-            }
-
-            let preferredAudio: MediaStreamTrack | undefined
-            if (isSystemSoundEnabled || (micStream && micStream.getAudioTracks().length)) {
-                preferredAudio = pickPreferredAudioTrack(stream, micStream, mixedAudioTrack)
-            }
             // Compose screen + optional camera overlay into a canvas and capture it
             const screenVideoTrack = stream.getVideoTracks()[0]
             const s = screenVideoTrack?.getSettings ? screenVideoTrack.getSettings() : {}
-            // Start with unknown canvas dimensions; we will set these to the
-            // native captured source dimensions once metadata is available.
-            let canvasWidth = s.width ?? 0
-            let canvasHeight = s.height ?? 0
             const compFps = s.frameRate ?? 30
 
-            const canvas = document.createElement("canvas")
-            // Temporarily set a minimal size to avoid 0x0 canvas issues
-            canvas.width = canvasWidth || 2
-            canvas.height = canvasHeight || 2
-            const ctx = canvas.getContext("2d")!
-
-            const screenVideoEl = document.createElement("video")
-            screenVideoEl.muted = true
-            screenVideoEl.playsInline = true
-            screenVideoEl.autoplay = true
-            screenVideoEl.srcObject = stream
-            try {
-                await screenVideoEl.play()
-            } catch {}
-
-            // Ensure the output canvas exactly matches the captured source dimensions.
-            // This guarantees the recorded video resolution equals the screen/window size.
-            const applyNativeCanvasSize = () => {
-                const vw = screenVideoEl.videoWidth
-                const vh = screenVideoEl.videoHeight
-                if (vw && vh && (vw !== canvasWidth || vh !== canvasHeight)) {
-                    canvasWidth = vw
-                    canvasHeight = vh
-                    canvas.width = canvasWidth
-                    canvas.height = canvasHeight
-                }
-            }
-            // Wait for metadata if needed, then set the canvas size.
-            if (!screenVideoEl.videoWidth || !screenVideoEl.videoHeight) {
-                await new Promise<void>((resolve) => {
-                    const onReady = () => {
-                        try {
-                            applyNativeCanvasSize()
-                        } finally {
-                            resolve()
-                        }
-                    }
-                    try {
-                        if (screenVideoEl.readyState >= 1) onReady()
-                        else screenVideoEl.onloadedmetadata = onReady
-                    } catch {
-                        // If anything goes wrong, fall back to settings or 1080p
-                        canvasWidth = canvasWidth || s.width || 1920
-                        canvasHeight = canvasHeight || s.height || 1080
-                        canvas.width = canvasWidth
-                        canvas.height = canvasHeight
-                        resolve()
-                    }
-                })
-            } else {
-                applyNativeCanvasSize()
-            }
-
-            // Also react to dynamic size changes on the captured track when possible
-            try {
-                // Not all environments fire this, but harmless if unsupported
-                ;(screenVideoEl as HTMLVideoElement).onresize = () => applyNativeCanvasSize()
-            } catch {}
-
-            let camStream: MediaStream | null = null
-            let camVideoEl: HTMLVideoElement | null = null
-            try {
-                // Always use the raw camera device for overlay to avoid black background from window capture.
-                // If the floating camera window is open, close it temporarily to free the device.
-                try {
-                    if (selectedCameraId) {
-                        await window.electronAPI.closeCamera?.()
-                        closedCameraForRecordingRef.current = true
-                    }
-                } catch {}
-
-                if (selectedCameraId) {
-                    camStream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            deviceId: { exact: selectedCameraId },
-                            // Avoid width/height constraints to preserve native aspect ratio
-                            // Draw logic will scale+clip to the overlay without stretching
-                            frameRate: { ideal: compFps },
-                        },
-                        audio: false,
-                    })
-                }
-
-                if (camStream) {
-                    camVideoEl = document.createElement("video")
-                    camVideoEl.muted = true
-                    camVideoEl.playsInline = true
-                    camVideoEl.autoplay = true
-                    camVideoEl.srcObject = camStream
-                    try {
-                        await camVideoEl.play()
-                    } catch {}
-                }
-            } catch (e) {
-                console.warn("Camera capture failed; proceeding without overlay", e)
-            }
-
             const padding = 24 // px
-            // Match camera.tsx base size (size-50 ≈ 200px)
-            let overlayW = 0
-            let overlayH = 0
-            let overlayRadiusPx = 0
+            const overlay = await createCameraOverlay({
+                selectedCameraId,
+                compFps,
+                padding,
+            })
 
-            try {
-                const metrics = await window.electronAPI.getCameraMetrics?.()
-                if (metrics) {
-                    const scale = metrics.dpr || 1
-                    const w = Math.max(1, Math.round(metrics.width * scale))
-                    const h = Math.max(1, Math.round(metrics.height * scale))
-                    const r = Math.max(0, Math.round(metrics.radiusPx * scale))
-                    if (w >= 16 && h >= 16) {
-                        overlayW = w
-                        overlayH = h
-                        overlayRadiusPx = Math.min(r, Math.floor(Math.min(w, h) / 2))
-                    }
-                }
-            } catch {
-                // ignore and use defaults
-            }
+            if (overlay.closedCameraForRecording) closedCameraForRecordingRef.current = true
 
-            // Periodically refresh overlay metrics so recording matches visible camera changes
-            let metricsInterval: number | null = null
-            const refreshOverlayMetrics = async () => {
-                try {
-                    const m = await window.electronAPI.getCameraMetrics?.()
-                    if (!m) return
-                    const scale = m.dpr || 1
-                    const w = Math.max(1, Math.round(m.width * scale))
-                    const h = Math.max(1, Math.round(m.height * scale))
-                    const r = Math.max(0, Math.round(m.radiusPx * scale))
-                    if (w >= 16 && h >= 16) {
-                        overlayW = w
-                        overlayH = h
-                        overlayRadiusPx = Math.min(r, Math.floor(Math.min(w, h) / 2))
-                    }
-                } catch {}
-            }
-            metricsInterval = window.setInterval(refreshOverlayMetrics, 500)
+            const compositor = await createVideoCompositor({
+                screenStream: stream,
+                compFps,
+                overlayDraw: overlay.draw,
+            })
 
-            // Cache overlay geometry/clip path for better performance
-            let clipPath: Path2D | null = null
-            let lastOverlayW = overlayW
-            let lastOverlayH = overlayH
-            let lastRadius = overlayRadiusPx
-            let lastVW = 0
-            let lastVH = 0
-            let drawDX = 0
-            let drawDY = 0
-            let drawDW = overlayW
-            let drawDH = overlayH
-
-            const updateGeometry = () => {
-                // Defer drawing until camera metrics provide valid dimensions
-                if (overlayW < 1 || overlayH < 1) {
-                    clipPath = null
-                    return
-                }
-                const x = canvasWidth - overlayW - padding
-                const y = canvasHeight - overlayH - padding
-                const p = new Path2D()
-                const r = Math.min(overlayRadiusPx, overlayW / 2, overlayH / 2)
-                p.moveTo(x + r, y)
-                p.lineTo(x + overlayW - r, y)
-                p.quadraticCurveTo(x + overlayW, y, x + overlayW, y + r)
-                p.lineTo(x + overlayW, y + overlayH - r)
-                p.quadraticCurveTo(x + overlayW, y + overlayH, x + overlayW - r, y + overlayH)
-                p.lineTo(x + r, y + overlayH)
-                p.quadraticCurveTo(x, y + overlayH, x, y + overlayH - r)
-                p.lineTo(x, y + r)
-                p.quadraticCurveTo(x, y, x + r, y)
-                p.closePath()
-                clipPath = p
-
-                const vw = camVideoEl?.videoWidth || overlayW
-                const vh = camVideoEl?.videoHeight || overlayH
-                const scale = Math.max(overlayW / vw, overlayH / vh)
-                drawDW = vw * scale
-                drawDH = vh * scale
-                drawDX = x + (overlayW - drawDW) / 2
-                drawDY = y + (overlayH - drawDH) / 2
-
-                lastOverlayW = overlayW
-                lastOverlayH = overlayH
-                lastRadius = overlayRadiusPx
-                lastVW = vw
-                lastVH = vh
-            }
-
-            // Compute screen draw geometry (contain) to avoid stretching
-            let lastCanvasW = canvasWidth
-            let lastCanvasH = canvasHeight
-            let lastScreenVW = 0
-            let lastScreenVH = 0
-            let screenDX = 0
-            let screenDY = 0
-            let screenDW = canvasWidth
-            let screenDH = canvasHeight
-
-            const updateScreenGeometry = () => {
-                const vw = screenVideoEl.videoWidth || canvasWidth
-                const vh = screenVideoEl.videoHeight || canvasHeight
-                // Contain: preserve AR and letterbox/pillarbox to canvas
-                const scale = Math.min(canvasWidth / vw, canvasHeight / vh)
-                screenDW = Math.max(1, Math.round(vw * scale))
-                screenDH = Math.max(1, Math.round(vh * scale))
-                screenDX = Math.floor((canvasWidth - screenDW) / 2)
-                screenDY = Math.floor((canvasHeight - screenDH) / 2)
-                lastCanvasW = canvasWidth
-                lastCanvasH = canvasHeight
-                lastScreenVW = vw
-                lastScreenVH = vh
-            }
-
-            // Initialize screen geometry once video has metadata
-            try {
-                if (screenVideoEl.readyState >= 1) updateScreenGeometry()
-                else screenVideoEl.onloadedmetadata = () => updateScreenGeometry()
-            } catch {}
-
-            const targetMs = 1000 / Math.min(24, Math.max(1, compFps))
-            let lastDraw = 0
-
-            const doDraw = (now: number) => {
-                if (now - lastDraw < targetMs - 1) return
-                lastDraw = now
-                try {
-                    // Update geometry if canvas or source dims changed
-                    const vw = screenVideoEl.videoWidth || canvasWidth
-                    const vh = screenVideoEl.videoHeight || canvasHeight
-                    if (
-                        canvasWidth !== lastCanvasW ||
-                        canvasHeight !== lastCanvasH ||
-                        vw !== lastScreenVW ||
-                        vh !== lastScreenVH
-                    ) {
-                        updateScreenGeometry()
-                    }
-                    // Clear with black to avoid transparent edges in output
-                    ctx.save()
-                    ctx.fillStyle = "#000"
-                    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-                    ctx.restore()
-                    // Draw the screen video letterboxed
-                    ctx.drawImage(screenVideoEl, screenDX, screenDY, screenDW, screenDH)
-                } catch {}
-                if (camVideoEl) {
-                    // Refresh cached geometry if anything changed
-                    const vw = camVideoEl.videoWidth || overlayW
-                    const vh = camVideoEl.videoHeight || overlayH
-                    if (
-                        !clipPath ||
-                        overlayW !== lastOverlayW ||
-                        overlayH !== lastOverlayH ||
-                        overlayRadiusPx !== lastRadius ||
-                        vw !== lastVW ||
-                        vh !== lastVH
-                    ) {
-                        updateGeometry()
-                    }
-                    if (overlayW >= 1 && overlayH >= 1 && clipPath) {
-                        ctx.save()
-                        ctx.clip(clipPath)
-                        try {
-                            ctx.drawImage(camVideoEl, drawDX, drawDY, drawDW, drawDH)
-                        } catch {}
-                        ctx.restore()
-                    }
-                }
-            }
-
-            const anyVideo = screenVideoEl
-            if (typeof anyVideo.requestVideoFrameCallback === "function") {
-                const onFrame = (_now: number) => {
-                    doDraw(performance.now())
-                    anyVideo.requestVideoFrameCallback(onFrame)
-                }
-                anyVideo.requestVideoFrameCallback(onFrame)
-            } else {
-                const loop = (now: number) => {
-                    doDraw(now)
-                    requestAnimationFrame(loop)
-                }
-                requestAnimationFrame(loop)
-            }
-
-            const canvasStream = canvas.captureStream(Math.min(30, compFps))
             const combinedStream = new MediaStream([
-                ...canvasStream.getVideoTracks(),
+                ...compositor.canvasStream.getVideoTracks(),
                 ...(preferredAudio ? [preferredAudio] : []),
             ])
 
             screenStreamRef.current = stream
-            cameraStreamRef.current = camStream
+            cameraStreamRef.current = overlay.camStream ?? null
             systemAudioStreamRef.current = systemAudioStream
             micStreamRef.current = micStream
             streamRef.current = combinedStream
@@ -571,9 +235,9 @@ const FloatingBar = ({
             let videoBitrate = 8000000
 
             console.log("=== CODEC DIAGNOSTICS ===")
+            console.log("VP9 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=vp9"))
             console.log("VP8 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=vp8"))
             console.log("H264 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=h264"))
-            console.log("VP9 support:", MediaRecorder.isTypeSupported("video/mp4;codecs=vp9"))
 
             if (MediaRecorder.isTypeSupported("video/mp4;codecs=vp9")) {
                 mimeType = "video/mp4;codecs=vp9"
@@ -614,29 +278,30 @@ const FloatingBar = ({
                 videoBitsPerSecond: videoBitrate,
                 audioBitsPerSecond: 192000,
             })
-            mediaRecorderRef.current = mediaRecorder
 
+            mediaRecorderRef.current = mediaRecorder
             mediaRecorder.ondataavailable = async (event) => {
-                try {
+                const { error } = await tryCatch(async () => {
                     if (!event.data || event.data.size <= 0) return
 
-                    if (streamingEnabledRef.current && filePathRef.current) {
-                        const doWrite = async () => {
-                            const ab = await event.data.arrayBuffer()
-                            const uint8 = new Uint8Array(ab)
-                            await window.electronAPI.writeRecordingChunk(
-                                filePathRef.current!,
-                                uint8,
-                            )
-                        }
-                        writeQueueRef.current = writeQueueRef.current.then(doWrite).catch((err) => {
-                            console.error("Streaming write error:", err)
-                        })
-                    } else {
+                    if (!streamingEnabledRef.current || !filePathRef.current) {
                         chunksRef.current.push(event.data)
+                        return
                     }
-                } catch (e) {
-                    console.error("Chunk handling error:", e)
+
+                    const doWrite = async () => {
+                        const ab = await event.data.arrayBuffer()
+                        const uint8 = new Uint8Array(ab)
+                        await electronAPI.writeRecordingChunk(filePathRef.current!, uint8)
+                    }
+
+                    writeQueueRef.current = writeQueueRef.current
+                        .then(doWrite)
+                        .catch((err) => console.error("Streaming write error:", err))
+                })
+
+                if (error) {
+                    console.error("Chunk handling error:", error)
                 }
             }
 
@@ -647,70 +312,60 @@ const FloatingBar = ({
 
                 cleanupStreams()
 
-                try {
-                    try {
-                        if (metricsInterval !== null) {
-                            clearInterval(metricsInterval)
-                            metricsInterval = null
-                        }
-                    } catch {}
-                    if (streamingEnabledRef.current && filePathRef.current) {
-                        await writeQueueRef.current
-                        await window.electronAPI.closeRecordingStream(filePathRef.current)
-                        await window.electronAPI.deletePartialRecording(filePathRef.current)
-                    }
-                } catch (cleanupErr) {
+                overlay.dispose()
+                compositor.dispose()
+
+                const { error: cleanupErr } = await tryCatch(async () => {
+                    if (!streamingEnabledRef.current || !filePathRef.current) return
+
+                    await writeQueueRef.current
+                    await electronAPI.closeRecordingStream(filePathRef.current)
+                    await electronAPI.deletePartialRecording(filePathRef.current)
+                })
+
+                if (cleanupErr) {
                     console.warn("Cleanup after error failed:", cleanupErr)
-                } finally {
-                    streamingEnabledRef.current = false
                 }
-                alert("�?O Recording error occurred. This may be due to capture issues.")
+
+                streamingEnabledRef.current = false
+                alert("Recording error occurred. This may be due to capture issues.")
             }
 
             mediaRecorder.onstop = async () => {
                 try {
                     if (streamingEnabledRef.current && filePathRef.current) {
                         await writeQueueRef.current
-                        const finalPath = await window.electronAPI.finalizeRecordingStream(
+                        const finalPath = await electronAPI.finalizeRecordingStream(
                             filePathRef.current,
                         )
-                        alert(`�o. Recording saved: ${finalPath}`)
-                        if (window.electronAPI.openFolder) {
-                            window.electronAPI.openFolder(finalPath)
+                        alert(`Recording saved: ${finalPath}`)
+                        if (electronAPI.openFolder) {
+                            electronAPI.openFolder(finalPath)
                         }
                     } else {
-                        const blob = new Blob(chunksRef.current, {
-                            type: mimeType,
-                        })
+                        const blob = new Blob(chunksRef.current, { type: mimeType })
                         chunksRef.current = []
                         const arrayBuffer = await blob.arrayBuffer()
                         const uint8 = new Uint8Array(arrayBuffer)
-                        const msg = await window.electronAPI.saveRecording(
-                            recordingConfig.filePath,
-                            uint8,
-                        )
+                        const msg = await electronAPI.saveRecording(recordingConfig.filePath, uint8)
                         console.log(msg)
-                        alert(`�o. Recording saved: ${recordingConfig.filePath}`)
-                        if (window.electronAPI.openFolder) {
-                            window.electronAPI.openFolder(recordingConfig.filePath)
+                        alert(`Recording saved: ${recordingConfig.filePath}`)
+                        if (electronAPI.openFolder) {
+                            electronAPI.openFolder(recordingConfig.filePath)
                         }
                     }
                 } catch (err) {
                     console.error("Save recording error:", err)
-                    alert(`�?O Failed to save recording: ${err}`)
+                    alert(`Failed to save recording: ${err}`)
                 } finally {
-                    try {
-                        if (metricsInterval !== null) {
-                            clearInterval(metricsInterval)
-                            metricsInterval = null
-                        }
-                    } catch {}
+                    overlay.dispose()
+                    compositor.dispose()
+
                     // Re-open the camera overlay window if we closed it for recording
-                    try {
-                        if (closedCameraForRecordingRef.current && selectedCameraId) {
-                            await window.electronAPI.openCamera(selectedCameraId)
-                        }
-                    } catch {}
+                    if (closedCameraForRecordingRef.current && selectedCameraId) {
+                        await electronAPI.openCamera(selectedCameraId)
+                    }
+
                     closedCameraForRecordingRef.current = false
 
                     setIsRecording(false)
@@ -834,8 +489,8 @@ const RecordBar = () => {
     const { config, isLoading } = useRecordConfig()
 
     const handleClose = () => {
-        window.electronAPI.closeRecordBar()
-        window.electronAPI.closeCamera()
+        electronAPI.closeRecordBar()
+        electronAPI.closeCamera()
     }
 
     if (!config || isLoading) {
