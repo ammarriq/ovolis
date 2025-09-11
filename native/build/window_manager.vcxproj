@@ -140,7 +140,7 @@
     <ClCompile Include="..\window_manager.cpp">
       <ObjectFileName>$(IntDir)\window_manager.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\node_modules\node-addon-api\nothing.vcxproj">

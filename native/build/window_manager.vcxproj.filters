@@ -25,28 +25,28 @@
     <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx">
       <UniqueIdentifier>{82DA865C-1486-A6D3-BD7F-D5CDD81F2B0E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521">
-      <UniqueIdentifier>{72C19234-3D05-E661-88CF-55DC2E0A2D33}</UniqueIdentifier>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9">
+      <UniqueIdentifier>{FDA50FAA-E29A-C7B6-936E-8C29D72EC9F6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0">
-      <UniqueIdentifier>{CED5068C-BA66-B0C8-ADCE-8A2083F62686}</UniqueIdentifier>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c">
+      <UniqueIdentifier>{B577CFEF-9128-82CF-D6C4-9079A65479AF}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules">
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules">
       <UniqueIdentifier>{56DF7A98-063D-FB9D-485C-089023B4C16A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm">
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm">
       <UniqueIdentifier>{293CE058-3CF8-8B4D-C9A0-FD024AF736DB}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1">
-      <UniqueIdentifier>{C648F564-C3F9-EF65-8C8D-4BCE20CA9131}</UniqueIdentifier>
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2">
+      <UniqueIdentifier>{4CD926F7-0813-27F5-849F-CFD932F0D6F6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules">
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2\node_modules">
       <UniqueIdentifier>{56DF7A98-063D-FB9D-485C-089023B4C16A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules\node-gyp">
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2\node_modules\node-gyp">
       <UniqueIdentifier>{77348C0E-2034-7791-74D5-63C077DF5A3B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules\node-gyp\src">
+    <Filter Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2\node_modules\node-gyp\src">
       <UniqueIdentifier>{8CDEE807-BC53-E450-C8B8-4DEBB66742D4}</UniqueIdentifier>
     </Filter>
     <Filter Include="..">
@@ -57,8 +57,8 @@
     <ClCompile Include="..\window_manager.cpp">
       <Filter>..</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules\node-gyp\src\win_delay_load_hook.cc">
-      <Filter>C:\Users\HP\AppData\Local\pnpm-cache\dlx\166b8967ed7ba5752f7cce98a9b7c92cc3be127c13f7d4cb4216393de13c7521\198e15af898-24c0\node_modules\.pnpm\node-gyp@11.4.1\node_modules\node-gyp\src</Filter>
+    <ClCompile Include="C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2\node_modules\node-gyp\src\win_delay_load_hook.cc">
+      <Filter>C:\Users\HP\AppData\Local\pnpm-cache\dlx\c83fbe8a9ea87bbb63c869e9c19a4c0476f7ac3859ddb8013a6b9757793791e9\19939856d4a-374c\node_modules\.pnpm\node-gyp@11.4.2\node_modules\node-gyp\src</Filter>
     </ClCompile>
     <None Include="..\binding.gyp">
       <Filter>..</Filter>

@@ -171,6 +171,20 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
             }
         }
 
+        // Determine the target monitor work area and center position for the new size
+        HMONITOR hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi;
+        mi.cbSize = sizeof(MONITORINFO);
+        int newPosX = currentX;
+        int newPosY = currentY;
+        if (GetMonitorInfo(hMon, &mi)) {
+            RECT work = mi.rcWork; // Use the work area to avoid taskbar overlap
+            int workWidth = work.right - work.left;
+            int workHeight = work.bottom - work.top;
+            newPosX = work.left + (workWidth - width) / 2;
+            newPosY = work.top + (workHeight - height) / 2;
+        }
+
         // Try multiple approaches to resize the window without changing focus
         BOOL success = FALSE;
         
@@ -178,8 +192,8 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
         success = SetWindowPos(
             hwnd,
             nullptr,
-            currentX,
-            currentY,
+            newPosX,
+            newPosY,
             width,
             height,
             SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
@@ -190,8 +204,8 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
             success = SetWindowPos(
                 hwnd,
                 nullptr,
-                currentX,
-                currentY,
+                newPosX,
+                newPosY,
                 width,
                 height,
                 SWP_NOZORDER | SWP_NOACTIVATE
@@ -200,7 +214,7 @@ Napi::Value ResizeWindow(const Napi::CallbackInfo& info) {
         
         if (!success) {
             // Approach 3: Try MoveWindow as fallback
-            success = MoveWindow(hwnd, currentX, currentY, width, height, TRUE);
+            success = MoveWindow(hwnd, newPosX, newPosY, width, height, TRUE);
         }
 
         if (success) {
