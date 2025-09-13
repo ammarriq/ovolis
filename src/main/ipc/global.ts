@@ -5,9 +5,9 @@ import path from "path"
 import {
     initCaptureExclusionListener,
     setAppWindowsExcludedFromCapture,
-} from "~/utils/capture-exclusion"
-import { takeScreenshot } from "~/utils/take-screenshots"
-import { focusWindow, resizeWindow } from "~/utils/window-manager"
+} from "~/main/ipc/capture-exclusion"
+import { takeScreenshot } from "~/main/ipc/take-screenshots"
+import { focusWindow, resizeWindow } from "~/main/window-manager"
 
 /**
  * Register IPC handlers that are not tied to a specific window.

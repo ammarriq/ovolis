@@ -2,15 +2,15 @@ import type { ScreenSource } from "~/types/screen-sources"
 
 import { ipcMain } from "electron"
 
-import { fixMp4Metadata } from "~/utils/ffmpeg-post"
+import { fixMp4Metadata } from "~/main/recording/ffmpeg-post"
 import {
     closeRecordingStream,
     deletePartialRecording,
     finalizeRecordingStream,
     openRecordingStream,
     writeRecordingChunk,
-} from "~/utils/recording-stream"
-import { saveRecording, startRecording } from "~/utils/start-recording"
+} from "~/main/recording/recording-stream"
+import { saveRecording, startRecording } from "~/main/recording/start-recording"
 
 export function registerRecordingIpc() {
     // recording options
@@ -51,4 +51,3 @@ export function registerRecordingIpc() {
         return await deletePartialRecording(filePath)
     })
 }
-

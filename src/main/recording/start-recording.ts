@@ -22,7 +22,7 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
         const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.mp4`
 
-        // Save recordings under AppData\Roaming\CursorX\recordings
+        // Save recordings under AppData\\Roaming\\CursorX\\recordings
         const recordingsPath = path.join(app.getPath("appData"), "CursorX", "recordings")
         const filePath = path.join(recordingsPath, filename)
 
@@ -130,3 +130,4 @@ export async function saveRecordingWithoutConversion(
         )
     }
 }
+

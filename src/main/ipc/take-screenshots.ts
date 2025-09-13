@@ -71,3 +71,4 @@ export async function takeScreenshot() {
         throw error
     }
 }
+

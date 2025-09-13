@@ -79,3 +79,4 @@ export async function finalizeRecordingStream(filePath: string): Promise<string>
     await fs.promises.rename(partialPath, filePath)
     return filePath
 }
+
