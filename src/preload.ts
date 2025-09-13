@@ -69,6 +69,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("open-folder", filePath)
     },
 
+    // Exclude app windows from OS-level capture during recording
+    setExcludeAppWindowsFromCapture: (enabled: boolean) => {
+        return ipcRenderer.invoke("set-exclude-app-windows-from-capture", enabled)
+    },
+
     createRecordBar: (config: RecordConfig) => {
         return ipcRenderer.invoke("create-record-bar", config)
     },
@@ -83,7 +88,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.invoke("set-current-window-position", x, y),
 
     // FFmpeg APIs removed; recordings are saved directly as mp4
-} satisfies Window["electronAPI"])
+} satisfies Window["electronAPI"]) 
 
 // Bridge main-process IPC to renderer DOM event for camera overlay window
 ipcRenderer.on("camera:selected", (_evt, cameraId: string) => {

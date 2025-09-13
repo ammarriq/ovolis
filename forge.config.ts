@@ -23,7 +23,7 @@ const config: ForgeConfig = {
     makers: [
         new MakerSquirrel({
             // Use .ico for the Windows installer
-            setupIcon: "src/assets/icons/icon.ico",
+            setupIcon: "src/assets/icons/icon",
         }),
         new MakerZIP({}, ["darwin"]),
         new MakerRpm({}),

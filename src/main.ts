@@ -7,6 +7,10 @@ import started from "electron-squirrel-startup"
 import path from "path"
 
 import { createCamera } from "./utils/camera"
+import {
+    initCaptureExclusionListener,
+    setAppWindowsExcludedFromCapture,
+} from "./utils/capture-exclusion"
 import { fixMp4Metadata } from "./utils/ffmpeg-post"
 import { createRecordBar } from "./utils/record-bar"
 import {
@@ -55,14 +59,12 @@ function getIconPath(): string {
 let mainWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
 let cameraWindow: BrowserWindow | null = null
-let latestCameraMetrics:
-    | {
-          width: number
-          height: number
-          radiusPx: number
-          dpr: number
-      }
-    | null = null
+let latestCameraMetrics: {
+    width: number
+    height: number
+    radiusPx: number
+    dpr: number
+} | null = null
 
 // Global cursor/window helpers available to any renderer
 ipcMain.handle("get-cursor-point", () => {
@@ -200,6 +202,11 @@ const createWindow = () => {
         await shell.openPath(folderPath)
     })
 
+    // Toggle excluding our app windows from being recorded (OS-level content protection)
+    ipcMain.handle("set-exclude-app-windows-from-capture", (_evt, enabled: boolean) => {
+        setAppWindowsExcludedFromCapture(!!enabled)
+    })
+
     // Provide the source id of the Camera window for efficient PiP compositing
     ipcMain.handle("get-camera-source-id", async () => {
         try {
@@ -294,6 +301,9 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", createWindow)
+
+// Ensure any windows created while exclusion is active inherit protection
+initCaptureExclusionListener()
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

@@ -149,6 +149,8 @@ function FloatingBar({
         setIsStartingRecording(true)
 
         try {
+            // Ensure our app windows are excluded from capture during recording
+            // await electronAPI.setExcludeAppWindowsFromCapture(true)
             logDisplayDiagnostics()
             const recordingConfigStr = await electronAPI.startRecording({
                 id: source.id,
@@ -328,6 +330,8 @@ function FloatingBar({
                 }
 
                 streamingEnabledRef.current = false
+                // Re-enable capturing of our app windows after failure
+                await electronAPI.setExcludeAppWindowsFromCapture(false)
                 alert("Recording error occurred. This may be due to capture issues.")
             }
 
@@ -374,6 +378,8 @@ function FloatingBar({
                     onClose()
                     streamingEnabledRef.current = false
                     filePathRef.current = null
+                    // Restore normal capture behavior for our windows
+                    await electronAPI.setExcludeAppWindowsFromCapture(false)
                 }
             }
 
@@ -400,6 +406,8 @@ function FloatingBar({
         } catch (error) {
             console.error("Error starting recording:", error)
             setIsStartingRecording(false)
+            // Ensure we don't leave the app windows excluded in case of failure
+            await electronAPI.setExcludeAppWindowsFromCapture(false)
             alert(
                 `�?O Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
             )

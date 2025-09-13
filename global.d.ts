@@ -50,6 +50,9 @@ declare global {
             deletePartialRecording: (filePath: string) => Promise<void>
             openFolder: (filePath: string) => Promise<void>
 
+            // Toggle OS-level exclusion of app windows from capture
+            setExcludeAppWindowsFromCapture: (enabled: boolean) => Promise<void>
+
             createRecordBar: (config: RecordConfig) => Promise<void>
             closeRecordBar: () => Promise<void>
 
