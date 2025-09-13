@@ -62,6 +62,7 @@ function FloatingBar({
     const writeQueueRef = useRef<Promise<void>>(Promise.resolve())
     const streamingEnabledRef = useRef<boolean>(false)
     const closedCameraForRecordingRef = useRef<boolean>(false)
+    const deleteActionRef = useRef<boolean>(false)
 
     useEffect(() => {
         if (isRecording && !isPaused) {
@@ -337,7 +338,17 @@ function FloatingBar({
 
             mediaRecorder.onstop = async () => {
                 try {
-                    if (streamingEnabledRef.current && filePathRef.current) {
+                    if (deleteActionRef.current) {
+                        if (streamingEnabledRef.current && filePathRef.current) {
+                            await writeQueueRef.current
+                            await electronAPI.closeRecordingStream(filePathRef.current)
+                            await electronAPI.deletePartialRecording(filePathRef.current)
+                        } else {
+                            // Discard buffered data and delete the temp file path, if any
+                            chunksRef.current = []
+                            await electronAPI.deletePartialRecording(recordingConfig.filePath)
+                        }
+                    } else if (streamingEnabledRef.current && filePathRef.current) {
                         await writeQueueRef.current
                         const finalPath = await electronAPI.finalizeRecordingStream(
                             filePathRef.current,
@@ -364,6 +375,8 @@ function FloatingBar({
                 } finally {
                     overlay.dispose()
                     compositor.dispose()
+
+                    deleteActionRef.current = false
 
                     // Re-open the camera overlay window if we closed it for recording
                     if (closedCameraForRecordingRef.current && selectedCameraId) {
@@ -447,6 +460,11 @@ function FloatingBar({
         }
     }
 
+    const deleteRecording = () => {
+        deleteActionRef.current = true
+        stopRecording()
+    }
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60)
         const secs = seconds % 60
@@ -485,7 +503,7 @@ function FloatingBar({
 
                 <div className="mx-4 h-3/4 border-r"></div>
 
-                <Button style={{ WebkitAppRegion: "no-drag" }}>
+                <Button style={{ WebkitAppRegion: "no-drag" }} onPress={deleteRecording}>
                     <DeleteIcon className="size-5" />
                 </Button>
             </section>
