@@ -1,6 +1,8 @@
 import fs from "fs"
 import path from "path"
 
+import { tryCatch } from "~/utils/try-catch"
+
 const streams = new Map<string, fs.WriteStream>()
 
 export function getPartialPath(filePath: string) {
@@ -9,15 +11,8 @@ export function getPartialPath(filePath: string) {
 
 export async function openRecordingStream(filePath: string): Promise<string> {
     const partialPath = getPartialPath(filePath)
-
     await fs.promises.mkdir(path.dirname(partialPath), { recursive: true })
-
-    // If an old partial exists, remove it to start fresh
-    try {
-        await fs.promises.unlink(partialPath)
-    } catch (_) {
-        // ignore if not exists
-    }
+    await tryCatch(fs.promises.unlink(partialPath))
 
     const ws = fs.createWriteStream(partialPath, {
         flags: "a",
@@ -56,11 +51,7 @@ export async function closeRecordingStream(filePath: string): Promise<void> {
 
 export async function deletePartialRecording(filePath: string): Promise<void> {
     const partialPath = getPartialPath(filePath)
-    try {
-        await fs.promises.unlink(partialPath)
-    } catch (_) {
-        // ignore
-    }
+    await tryCatch(fs.promises.unlink(partialPath))
 }
 
 export async function finalizeRecordingStream(filePath: string): Promise<string> {
@@ -69,14 +60,8 @@ export async function finalizeRecordingStream(filePath: string): Promise<string>
 
     const partialPath = getPartialPath(filePath)
 
-    // If final already exists, remove it (rare)
-    try {
-        await fs.promises.unlink(filePath)
-    } catch (_) {
-        // ignore if not exists
-    }
+    await tryCatch(fs.promises.unlink(filePath))
 
     await fs.promises.rename(partialPath, filePath)
     return filePath
 }
-

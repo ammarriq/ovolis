@@ -2,6 +2,8 @@ import { BrowserWindow, desktopCapturer, ipcMain, screen } from "electron"
 
 import path from "path"
 
+import { tryCatch } from "~/utils/try-catch"
+
 function createCamera(cameraId?: string): BrowserWindow {
     // Desired window size
     const windowWidth = 216
@@ -88,7 +90,7 @@ export function registerCameraIpc() {
 
     // Provide the source id of the Camera window for efficient PiP compositing
     ipcMain.handle("get-camera-source-id", async () => {
-        try {
+        const { data, error } = await tryCatch(async () => {
             if (!cameraWindow || cameraWindow.isDestroyed()) return null
             const cameraTitle = cameraWindow.getTitle() || "Camera"
             const sources = await desktopCapturer.getSources({
@@ -96,14 +98,20 @@ export function registerCameraIpc() {
                 fetchWindowIcons: false,
                 thumbnailSize: { width: 1, height: 1 },
             })
+            
             const match = sources.find(
                 (s) => (s.name || "").toLowerCase() === cameraTitle.toLowerCase(),
             )
+
             return match?.id ?? null
-        } catch (e) {
-            console.warn("Failed to get camera source id:", e)
+        })
+
+        if (error) {
+            console.warn("Failed to get camera source id:", error)
             return null
         }
+
+        return data
     })
 
     ipcMain.on("camera:update-metrics", (_, m: typeof cameraMetrics) => (cameraMetrics = m))

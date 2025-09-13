@@ -4,19 +4,16 @@ import { spawn } from "child_process"
 import fs from "fs"
 import path from "path"
 
+import { tryCatch } from "~/utils/try-catch"
+
 async function fileExists(p: string): Promise<boolean> {
-    try {
-        await fs.promises.access(p, fs.constants.X_OK)
-        return true
-    } catch {
-        try {
-            // On Windows, X_OK may not be meaningful; check for existence
-            await fs.promises.access(p, fs.constants.F_OK)
-            return true
-        } catch {
-            return false
-        }
+    const { error } = await tryCatch(fs.promises.access(p, fs.constants.X_OK))
+    if (error) {
+        const { error } = await tryCatch(fs.promises.access(p, fs.constants.F_OK))
+        if (error) return false
     }
+
+    return true
 }
 
 async function resolveFfmpegPath(): Promise<string | null> {
@@ -53,9 +50,7 @@ export async function fixMp4Metadata(filePath: string): Promise<string> {
     const tmpOut = path.join(dir, `${base}.fixed${ext}`)
 
     // Ensure tmpOut doesn't exist
-    try {
-        await fs.promises.unlink(tmpOut)
-    } catch {}
+    await tryCatch(fs.promises.unlink(tmpOut))
 
     await new Promise<void>((resolve, reject) => {
         const proc = spawn(ffmpegPath, [
@@ -80,11 +75,8 @@ export async function fixMp4Metadata(filePath: string): Promise<string> {
     })
 
     // Replace original atomically (best-effort on Windows)
-    try {
-        await fs.promises.unlink(filePath)
-    } catch {}
+    await tryCatch(fs.promises.unlink(filePath))
     await fs.promises.rename(tmpOut, filePath)
 
     return filePath
 }
-

@@ -1,7 +1,9 @@
 import { BrowserWindow, desktopCapturer } from "electron"
 
+import { tryCatch } from "~/utils/try-catch"
+
 export async function takeScreenshot() {
-    try {
+    const { data, error } = await tryCatch(async () => {
         const sources = await desktopCapturer.getSources({
             types: ["window", "screen"],
             thumbnailSize: { width: 600, height: 600 },
@@ -66,9 +68,12 @@ export async function takeScreenshot() {
             displayId: source.display_id,
             appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
         }))
-    } catch (error) {
+    })
+
+    if (error) {
         console.error("Error getting screen sources:", error)
         throw error
     }
-}
 
+    return data
+}

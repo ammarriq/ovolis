@@ -4,11 +4,9 @@ let exclusionActive = false
 
 function applyToAllWindows(enabled: boolean) {
     for (const win of BrowserWindow.getAllWindows()) {
-        try {
-            if (!win.isDestroyed()) {
-                win.setContentProtection(enabled)
-            }
-        } catch {}
+        if (!win.isDestroyed()) {
+            win.setContentProtection(enabled)
+        }
     }
 }
 
@@ -20,10 +18,7 @@ export function setAppWindowsExcludedFromCapture(enabled: boolean) {
 export function initCaptureExclusionListener() {
     app.on("browser-window-created", (_event, win) => {
         if (exclusionActive) {
-            try {
-                win.setContentProtection(true)
-            } catch {}
+            win.setContentProtection(true)
         }
     })
 }
-
