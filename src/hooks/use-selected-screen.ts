@@ -14,9 +14,11 @@ function useSelectedScreen() {
             setIsLoading(false)
         }
 
+        // @ts-expect-error - source-selected is not available in typescript
         window.addEventListener("source-selected", handleSourceSelected)
 
         return () => {
+            // @ts-expect-error - source-selected is not available in typescript
             window.removeEventListener("source-selected", handleSourceSelected)
         }
     }, [])

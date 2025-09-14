@@ -8,7 +8,7 @@ function useVideoCompositor() {
     const createVideoCompositor = async (opts: {
         screenStream: MediaStream
         compFps: number
-        overlayDraw?: OverlayDrawFn
+        overlayDraw: OverlayDrawFn
     }) => {
         const { screenStream, compFps, overlayDraw } = opts
 
@@ -71,7 +71,8 @@ function useVideoCompositor() {
         let running = true
 
         const doDraw = (now: number) => {
-            if (!running) return
+            if (!running || !ctx) return
+
             if (now - lastDraw < targetMs - 1) return
             lastDraw = now
 

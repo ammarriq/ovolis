@@ -3,14 +3,14 @@ import type { ScreenSource } from "~/types/screen-sources"
 import { useEffect, useState } from "react"
 
 interface Props {
-    selectedSource: ScreenSource
+    selectedSource?: ScreenSource
 }
 
 function useDisplayMetrics({ selectedSource }: Props) {
     const [displayMetrics, setDisplayMetrics] = useState<{
         width: number
         height: number
-    }>(null)
+    } | null>(null)
 
     useEffect(() => {
         const getDisplayMetrics = async () => {

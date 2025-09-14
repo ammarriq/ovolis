@@ -8,9 +8,11 @@ function useSelectedCamera() {
             setCameraId(event.detail.cameraId)
         }
 
+        // @ts-expect-error - camera-selected is not available in typescript
         window.addEventListener("camera-selected", handleCameraSelected)
 
         return () => {
+            // @ts-expect-error - camera-selected is not available in typescript
             window.removeEventListener("camera-selected", handleCameraSelected)
         }
     }, [])

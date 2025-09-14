@@ -26,6 +26,8 @@ export async function resizeWindow(
         const result = nativeAddon.resizeWindow(appName, width, height)
         return result
     }
+
+    return "Failed to resize window"
 }
 
 /**
@@ -42,4 +44,6 @@ export async function focusWindow(
         const result = nativeAddon.focusWindow(windowTitle)
         return result
     }
+
+    return "Failed to focus window"
 }

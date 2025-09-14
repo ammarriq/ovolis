@@ -14,7 +14,7 @@ interface Props {
         height: number
     } | null
     screenSources: ScreenSource[]
-    selectedScreen: ScreenSource | null
+    selectedScreen?: ScreenSource
     onScreenSelected: (screen: ScreenSource) => void
     onClose: () => void
 }
@@ -159,7 +159,7 @@ function Screens({
             </header>
 
             <aside className="grid overflow-y-auto px-4 pb-4">
-                {isScreenOpen ? (
+                {isScreenOpen && selectedScreen ? (
                     <div
                         className="hover:bg-accent bg-accent/10 ring-border relative grid w-full gap-2 rounded-md border"
                         // onClick={() => selectSource(source)}

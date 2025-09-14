@@ -182,6 +182,11 @@ function FloatingBar({
                 console.warn("Primary capture method failed, trying fallback:", streamError)
             }
 
+            if (!stream) {
+                alert("Failed to acquire screen stream")
+                return
+            }
+
             // Acquire audio sources via hook
             const { systemAudioStream, micStream } = await createAudioSources({
                 isSystemSoundEnabled,

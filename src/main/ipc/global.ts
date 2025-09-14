@@ -52,7 +52,9 @@ export function registerGlobalIpc() {
 
     // Choose and store a custom recordings directory
     ipcMain.handle("choose-save-location", async (evt) => {
-        const win = BrowserWindow.fromWebContents(evt.sender) ?? undefined
+        const win = BrowserWindow.fromWebContents(evt.sender)
+        if (!win) return null
+
         const result = await dialog.showOpenDialog(win, {
             properties: ["openDirectory", "createDirectory"],
         })

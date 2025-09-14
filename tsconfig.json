@@ -9,6 +9,7 @@
         "src/components/conversion-progress.tsx"
     ],
     "compilerOptions": {
+        "strict": true,
         "target": "ESNext",
         "module": "esnext",
         "jsx": "react-jsx",
