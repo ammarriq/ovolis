@@ -3,6 +3,7 @@ import type {
     MenuItemProps,
     MenuProps,
     MenuTriggerProps,
+    PopoverProps,
     SubmenuTriggerProps,
 } from "react-aria-components"
 
@@ -36,9 +37,13 @@ export function MenuTrigger({ className, ...props }: ButtonProps) {
     )
 }
 
-export function MenuContent({ className, ...props }: MenuProps<HTMLDivElement>) {
+export function MenuContent({
+    className,
+    placement,
+    ...props
+}: MenuProps<HTMLDivElement> & { placement?: PopoverProps["placement"] }) {
     return (
-        <_Popover className="outline-none">
+        <_Popover className="outline-none" placement={placement}>
             <_Menu
                 {...props}
                 className={cn(

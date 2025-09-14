@@ -1,6 +1,7 @@
 import "@fontsource-variable/noto-sans-lao"
 import "~/index.css"
 
+import type { AdvanceRecordSettings } from "~/types/advance-settings"
 import type { ScreenSource } from "~/types/screen-sources"
 
 import { useEffect, useRef, useState } from "react"
@@ -9,6 +10,7 @@ import { Button } from "react-aria-components"
 
 import AppIcon from "~/assets/icons/icon.png"
 import Screens from "~/components/screens"
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover"
 import {
     Select,
     SelectContent,
@@ -16,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select"
-import Switch from "~/components/ui/switch"
+import { Switch, SwitchThumb, SwitchTrack } from "~/components/ui/switch"
 import useDevices from "~/hooks/use-devices"
 import useDevicesReady from "~/hooks/use-devices-ready"
 import useDisplayMetrics from "~/hooks/use-display-metrics"
@@ -25,11 +27,19 @@ import { CameraIcon } from "~/icons/camera"
 import { CloseIcon } from "~/icons/close"
 import { MicIcon } from "~/icons/mic"
 import { ScreenIcon } from "~/icons/screen"
+import { SettingsIcon } from "~/icons/settings"
 import { VolumeIcon } from "~/icons/volume"
+import { cn } from "~/utils/cn"
 
 function Recorder() {
-    const [modal, setModal] = useState(false)
+    const [screenDialog, setScreenDialog] = useState(false)
+    const [settingsDialog, setSettingsDialog] = useState(false)
     const [selectedSource, setSelectedSource] = useState<ScreenSource>()
+    const [_settings, _setSettings] = useState<AdvanceRecordSettings>({
+        systemSoundEnabled: false,
+        appRecording: false,
+        saveLocation: "",
+    })
 
     const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
     const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
@@ -59,11 +69,12 @@ function Recorder() {
     }, [mics])
 
     const toggleScreenSelection = () => {
-        if (modal) {
-            setModal(false)
+        if (screenDialog) {
+            setScreenDialog(false)
             window.electronAPI.setWindowSize()
         } else {
-            setModal(true)
+            setScreenDialog(true)
+            setSettingsDialog(false)
             window.electronAPI.setWindowSize(420 + 280)
         }
     }
@@ -71,8 +82,13 @@ function Recorder() {
     if (!areDevicesReady) return null
 
     return (
-        <main className="grid h-screen grid-cols-[266px_400px] gap-4 overflow-hidden p-2">
-            <section className="bg-background shadow-cursor flex flex-col overflow-x-hidden rounded-2xl">
+        <main
+            className={cn(
+                "grid h-screen grid-cols-[266px_400px] gap-4 overflow-hidden p-2",
+                settingsDialog ? "grid-cols-[266px_300px]" : "",
+            )}
+        >
+            <section className="bg-background shadow-cursor flex flex-col overflow-hidden rounded-2xl">
                 <header
                     style={{ WebkitAppRegion: "drag" }}
                     className="bg-background mb-2.5 flex w-full items-center justify-between gap-4 px-4 pt-2"
@@ -122,10 +138,10 @@ function Recorder() {
                                 }
                             }}
                         >
-                            <SelectTrigger className="py-1.5">
+                            <SelectTrigger>
                                 <CameraIcon className="text-primary size-4.5" />
                                 <SelectValue />
-                                <Switch isOn={selectedCameraId !== null} />
+                                <Switch isSelected={selectedCameraId !== null} isDisabled />
                             </SelectTrigger>
 
                             <SelectContent>
@@ -151,10 +167,10 @@ function Recorder() {
                                 setSelectedMicId(mic)
                             }}
                         >
-                            <SelectTrigger className="py-1.5">
+                            <SelectTrigger>
                                 <MicIcon className="text-primary size-4.5" />
                                 <SelectValue />
-                                <Switch isOn={selectedMicId !== null} />
+                                <Switch isSelected={selectedMicId !== null} isDisabled />
                             </SelectTrigger>
 
                             <SelectContent>
@@ -167,34 +183,58 @@ function Recorder() {
                             </SelectContent>
                         </Select>
 
-                        <Button
-                            className="z-10 flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-1.5 text-left text-sm whitespace-nowrap disabled:opacity-60 [&>span]:w-0 [&>span]:grow [&>span]:truncate [&>svg]:size-4.5 [&>svg]:shrink-0"
-                            onPress={() => setIsSystemSoundEnabled(!isSystemSoundEnabled)}
+                        <Switch
+                            className="z-10 flex w-full items-center gap-2 rounded-md bg-[#F3F4F6] px-3 py-2 text-left text-sm whitespace-nowrap disabled:opacity-60 [&>span]:w-0 [&>span]:grow [&>span]:truncate [&>svg]:size-4.5 [&>svg]:shrink-0"
+                            onChange={setIsSystemSoundEnabled}
                         >
                             <VolumeIcon className="text-primary size-4.5" />
                             <p>System Sound</p>
-                            <Switch isOn={isSystemSoundEnabled} />
-                        </Button>
+                            <SwitchTrack>
+                                <SwitchThumb />
+                            </SwitchTrack>
+                        </Switch>
                     </fieldset>
-                    <Button
-                        className="bg-primary text-primary-foreground mt-4 w-full rounded-md px-3 py-2 text-sm"
-                        onPress={() => {
-                            if (selectedSource) {
-                                window.electronAPI.createRecordBar({
-                                    source: selectedSource,
-                                    selectedMicId,
-                                    selectedCameraId,
-                                    isSystemSoundEnabled,
-                                })
-                            }
-                        }}
-                    >
-                        Start Recording
-                    </Button>
+
+                    <div className="mt-4 flex gap-2">
+                        <Button
+                            className="bg-primary text-primary-foreground grow rounded-md px-3 py-2 text-sm"
+                            onPress={() => {
+                                if (selectedSource) {
+                                    window.electronAPI.createRecordBar({
+                                        source: selectedSource,
+                                        selectedMicId,
+                                        selectedCameraId,
+                                        isSystemSoundEnabled: isSystemSoundEnabled,
+                                    })
+                                }
+                            }}
+                        >
+                            Start Recording
+                        </Button>
+
+                        <Popover>
+                            <PopoverTrigger className="max-w-fit">
+                                <SettingsIcon className="text-primary size-4.5" />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 space-y-1" placement="top right">
+                                <Switch className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm">
+                                    <span>Record CursorX</span>
+                                    <SwitchTrack className="bg-[#F3F4F6]">
+                                        <SwitchThumb className="bg-white" />
+                                    </SwitchTrack>
+                                </Switch>
+
+                                <Button className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm">
+                                    <span>Save Location</span>
+                                    <span>Default</span>
+                                </Button>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </aside>
             </section>
 
-            {modal ? (
+            {screenDialog ? (
                 <Screens
                     displayMetrics={displayMetrics}
                     screenSources={screenSources}

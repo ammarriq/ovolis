@@ -6,4 +6,3 @@ export interface RecordConfig {
     selectedCameraId: string | null
     isSystemSoundEnabled: boolean
 }
-

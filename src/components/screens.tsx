@@ -140,7 +140,10 @@ function Screens({
                     <button
                         className="relative -mr-2 grid size-7 shrink-0 place-items-center rounded-full"
                         style={{ WebkitAppRegion: "no-drag" }}
-                        onClick={() => setIsScreenOpen(false)}
+                        onClick={() => {
+                            if (isScreenOpen) setIsScreenOpen(false)
+                            else onClose()
+                        }}
                     >
                         <ArrowLeftIcon strokeWidth={2} className="size-4" />
                     </button>
