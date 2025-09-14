@@ -50,6 +50,10 @@ declare global {
             deletePartialRecording: (filePath: string) => Promise<void>
             openFolder: (filePath: string) => Promise<void>
 
+            // Save location picker
+            chooseSaveLocation: () => Promise<string | null>
+            getSaveLocation: () => Promise<string | null>
+
             // Toggle OS-level exclusion of app windows from capture
             setExcludeAppWindowsFromCapture: (enabled: boolean) => Promise<void>
 

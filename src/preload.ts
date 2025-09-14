@@ -69,6 +69,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
         return ipcRenderer.invoke("open-folder", filePath)
     },
 
+    // Save location selection
+    chooseSaveLocation: () => {
+        return ipcRenderer.invoke("choose-save-location") as Promise<string | null>
+    },
+    getSaveLocation: () => {
+        return ipcRenderer.invoke("get-save-location") as Promise<string | null>
+    },
+
     // Exclude app windows from OS-level capture during recording
     setExcludeAppWindowsFromCapture: (enabled: boolean) => {
         return ipcRenderer.invoke("set-exclude-app-windows-from-capture", enabled)

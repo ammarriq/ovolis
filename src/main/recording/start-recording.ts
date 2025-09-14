@@ -4,9 +4,12 @@ import fs from "fs"
 import { writeFile } from "fs/promises"
 import path from "path"
 
+import { getSaveDirectory } from "~/main/recording/save-location"
 import { tryCatch } from "~/utils/try-catch.js"
 
 import { fixMp4Metadata } from "./ffmpeg-post.js"
+
+const DEFAULT_PATH = path.join(app.getPath("videos"), "CursorX")
 
 export async function startRecording(sourceId: string, sourceName: string): Promise<string> {
     const { data, error } = await tryCatch(async () => {
@@ -25,8 +28,9 @@ export async function startRecording(sourceId: string, sourceName: string): Prom
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
         const filename = `recording-${sourceName.replace(/[^a-zA-Z0-9]/g, "_")}-${timestamp}.mp4`
 
-        // Save recordings under AppData\\Roaming\\CursorX\\recordings
-        const recordingsPath = path.join(app.getPath("appData"), "CursorX", "recordings")
+        // Resolve base directory: user-selected or default under Videos/CursorX
+        const baseDir = getSaveDirectory() ?? DEFAULT_PATH
+        const recordingsPath = baseDir
         const filePath = path.join(recordingsPath, filename)
 
         let exactWidth: number | undefined

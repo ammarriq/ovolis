@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen, shell } from "electron"
+import { BrowserWindow, dialog, ipcMain, screen, shell } from "electron"
 
 import path from "path"
 
@@ -7,6 +7,7 @@ import {
     setAppWindowsExcludedFromCapture,
 } from "~/main/ipc/capture-exclusion"
 import { takeScreenshot } from "~/main/ipc/take-screenshots"
+import { getSaveDirectory, setSaveDirectory } from "~/main/recording/save-location"
 import { focusWindow, resizeWindow } from "~/main/window-manager"
 
 /**
@@ -47,6 +48,24 @@ export function registerGlobalIpc() {
     ipcMain.handle("open-folder", async (_evt, filePath: string) => {
         const folderPath = path.dirname(filePath)
         await shell.openPath(folderPath)
+    })
+
+    // Choose and store a custom recordings directory
+    ipcMain.handle("choose-save-location", async (evt) => {
+        const win = BrowserWindow.fromWebContents(evt.sender) ?? undefined
+        const result = await dialog.showOpenDialog(win, {
+            properties: ["openDirectory", "createDirectory"],
+        })
+        if (!result.canceled && result.filePaths.length > 0) {
+            const dir = result.filePaths[0]
+            setSaveDirectory(dir)
+            return dir
+        }
+        return null
+    })
+
+    ipcMain.handle("get-save-location", async () => {
+        return getSaveDirectory()
     })
 
     // Toggle excluding our app windows from being recorded (OS-level content protection)

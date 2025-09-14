@@ -22,6 +22,7 @@ import { Switch, SwitchThumb, SwitchTrack } from "~/components/ui/switch"
 import useDevices from "~/hooks/use-devices"
 import useDevicesReady from "~/hooks/use-devices-ready"
 import useDisplayMetrics from "~/hooks/use-display-metrics"
+import useSaveLocation from "~/hooks/use-save-location"
 import useScreenSources from "~/hooks/use-screen-sources"
 import { CameraIcon } from "~/icons/camera"
 import { CloseIcon } from "~/icons/close"
@@ -35,20 +36,18 @@ function Recorder() {
     const [screenDialog, setScreenDialog] = useState(false)
     const [settingsDialog, setSettingsDialog] = useState(false)
     const [selectedSource, setSelectedSource] = useState<ScreenSource>()
-    const [_settings, _setSettings] = useState<AdvanceRecordSettings>({
-        systemSoundEnabled: false,
-        appRecording: false,
-        saveLocation: "",
-    })
+    const [_settings, _setSettings] = useState<AdvanceRecordSettings>()
 
     const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
     const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
     const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(true)
+    const [isAppRecording, setIsAppRecording] = useState(false)
 
     const { mics, cameras } = useDevices()
     const areDevicesReady = useDevicesReady()
     const screenSources = useScreenSources()
     const displayMetrics = useDisplayMetrics({ selectedSource })
+    const { dirName, saveLocation, setSaveLocation } = useSaveLocation()
 
     useEffect(() => {
         if (!selectedSource && screenSources.length > 0) {
@@ -217,16 +216,28 @@ function Recorder() {
                                 <SettingsIcon className="text-primary size-4.5" />
                             </PopoverTrigger>
                             <PopoverContent className="w-56 space-y-1" placement="top right">
-                                <Switch className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm">
+                                <Switch
+                                    className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm"
+                                    isSelected={isAppRecording}
+                                    onChange={setIsAppRecording}
+                                >
                                     <span>Record CursorX</span>
                                     <SwitchTrack className="bg-[#F3F4F6]">
                                         <SwitchThumb className="bg-white" />
                                     </SwitchTrack>
                                 </Switch>
 
-                                <Button className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm">
+                                <Button
+                                    className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm"
+                                    onPress={async () => {
+                                        const dir = await window.electronAPI.chooseSaveLocation()
+                                        if (dir) setSaveLocation(dir)
+                                    }}
+                                >
                                     <span>Save Location</span>
-                                    <span>Default</span>
+                                    <span title={saveLocation || "Default"}>
+                                        {saveLocation ? dirName : "Default"}
+                                    </span>
                                 </Button>
                             </PopoverContent>
                         </Popover>

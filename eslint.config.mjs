@@ -46,7 +46,6 @@ export default defineConfig([
             ],
             "@typescript-eslint/no-empty-object-type": ["error", { allowInterfaces: "always" }],
             "@typescript-eslint/consistent-type-imports": "error",
-            "react/prop-types": ["error", { ignore: ["className"] }],
 
             "sort-imports": "off",
             "import/order": "off",
