@@ -19,10 +19,10 @@ import {
     SelectValue,
 } from "~/components/ui/select"
 import { Switch, SwitchThumb, SwitchTrack } from "~/components/ui/switch"
+import useAppSettings from "~/hooks/use-app-settings"
 import useDevices from "~/hooks/use-devices"
 import useDevicesReady from "~/hooks/use-devices-ready"
 import useDisplayMetrics from "~/hooks/use-display-metrics"
-import useSaveLocation from "~/hooks/use-save-location"
 import useScreenSources from "~/hooks/use-screen-sources"
 import { CameraIcon } from "~/icons/camera"
 import { CloseIcon } from "~/icons/close"
@@ -40,14 +40,14 @@ function Recorder() {
 
     const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
     const [selectedMicId, setSelectedMicId] = useState<string | null>(null)
-    const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(true)
-    const [isAppRecording, setIsAppRecording] = useState(false)
+    const [isSystemSoundEnabled, setIsSystemSoundEnabled] = useState(false)
 
     const { mics, cameras } = useDevices()
     const areDevicesReady = useDevicesReady()
     const screenSources = useScreenSources()
     const displayMetrics = useDisplayMetrics({ selectedSource })
-    const { dirName, saveLocation, setSaveLocation } = useSaveLocation()
+    const { isAppRecording, saveLocation, handleIsAppRecording, handleSaveLocation } =
+        useAppSettings()
 
     useEffect(() => {
         if (!selectedSource && screenSources.length > 0) {
@@ -219,7 +219,7 @@ function Recorder() {
                                 <Switch
                                     className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm"
                                     isSelected={isAppRecording}
-                                    onChange={setIsAppRecording}
+                                    onChange={handleIsAppRecording}
                                 >
                                     <span>Record CursorX</span>
                                     <SwitchTrack className="bg-[#F3F4F6]">
@@ -229,14 +229,11 @@ function Recorder() {
 
                                 <Button
                                     className="group flex w-full items-center justify-between rounded-md px-3 py-1.75 text-sm"
-                                    onPress={async () => {
-                                        const dir = await window.electronAPI.chooseSaveLocation()
-                                        if (dir) setSaveLocation(dir)
-                                    }}
+                                    onPress={handleSaveLocation}
                                 >
                                     <span>Save Location</span>
                                     <span title={saveLocation || "Default"}>
-                                        {saveLocation ? dirName : "Default"}
+                                        {saveLocation ? saveLocation : "Default"}
                                     </span>
                                 </Button>
                             </PopoverContent>

@@ -3,13 +3,6 @@ import { useEffect, useState } from "react"
 function useSaveLocation() {
     const [saveLocation, setSaveLocation] = useState("")
 
-    const getDirName = (p: string) => {
-        if (!p) return ""
-        const norm = p.replace(/\\/g, "/")
-        const parts = norm.split("/")
-        return parts[parts.length - 1] || p
-    }
-
     // Load any existing save location for current session
     useEffect(() => {
         if (window.electronAPI?.getSaveLocation) {
@@ -19,7 +12,7 @@ function useSaveLocation() {
         }
     }, [])
 
-    return { saveLocation, setSaveLocation, dirName: getDirName(saveLocation) }
+    return { saveLocation, setSaveLocation }
 }
 
 export default useSaveLocation

@@ -1,3 +1,4 @@
+import type { AppSettings } from "~/types/app-settings"
 import type { RecordConfig } from "~/types/record-config"
 import type { ScreenSource } from "~/types/screen-sources"
 
@@ -32,14 +33,10 @@ declare global {
                 dpr: number
             }) => void
             getCameraMetrics: () => Promise<{
-                x: number
-                y: number
                 width: number
                 height: number
                 radiusPx: number
                 dpr: number
-                windowWidth: number
-                windowHeight: number
             } | null>
             startRecording: (source: { id: string; name: string }) => Promise<string>
             saveRecording: (filePath: string, buffer: Uint8Array) => Promise<string>
@@ -66,6 +63,14 @@ declare global {
                 { x: number; y: number; width: number; height: number } | undefined
             >
             setCurrentWindowPosition: (x: number, y: number) => Promise<void>
+
+            // App settings persistence
+            getAppSetting: <K extends keyof AppSettings>(key: K) => Promise<AppSettings[K]>
+            setAppSetting: <K extends keyof AppSettings>(
+                key: K,
+                value: AppSettings[K],
+            ) => Promise<void>
+            loadAppSettings: () => Promise<AppSettings>
         }
     }
 }

@@ -33,14 +33,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     },
     // Camera overlay metrics
     updateCameraMetrics: (metrics: {
-        x: number
-        y: number
         width: number
         height: number
         radiusPx: number
         dpr: number
-        windowWidth: number
-        windowHeight: number
     }) => ipcRenderer.send("camera:update-metrics", metrics),
     getCameraMetrics: () => ipcRenderer.invoke("get-camera-metrics"),
 
@@ -94,6 +90,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getCurrentWindowBounds: () => ipcRenderer.invoke("get-current-window-bounds"),
     setCurrentWindowPosition: (x: number, y: number) =>
         ipcRenderer.invoke("set-current-window-position", x, y),
+
+    // App settings persistence
+    getAppSetting: (key: string) => {
+        return ipcRenderer.invoke("get-app-setting", key)
+    },
+    setAppSetting: (key: string, value: unknown) => {
+        return ipcRenderer.invoke("set-app-setting", key, value)
+    },
+    loadAppSettings: () => {
+        return ipcRenderer.invoke("load-app-settings")
+    },
 
     // FFmpeg APIs removed; recordings are saved directly as mp4
 } satisfies Window["electronAPI"])

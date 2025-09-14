@@ -8,6 +8,7 @@ import {
 } from "~/main/ipc/capture-exclusion"
 import { takeScreenshot } from "~/main/ipc/take-screenshots"
 import { getSaveDirectory, setSaveDirectory } from "~/main/recording/save-location"
+import { getSetting, setSetting, loadSettings } from "~/main/settings/app-settings"
 import { focusWindow, resizeWindow } from "~/main/window-manager"
 
 /**
@@ -68,6 +69,19 @@ export function registerGlobalIpc() {
 
     ipcMain.handle("get-save-location", async () => {
         return getSaveDirectory()
+    })
+
+    // App settings persistence
+    ipcMain.handle("get-app-setting", async (_, key: string) => {
+        return await getSetting(key as any)
+    })
+
+    ipcMain.handle("set-app-setting", async (_, key: string, value: any) => {
+        await setSetting(key as any, value)
+    })
+
+    ipcMain.handle("load-app-settings", async () => {
+        return await loadSettings()
     })
 
     // Toggle excluding our app windows from being recorded (OS-level content protection)
